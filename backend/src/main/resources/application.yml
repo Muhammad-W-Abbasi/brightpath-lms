@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: brightpath-lms
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include: "health,info"
+  endpoint:
+    health:
+      enabled: true
+    info:
+      enabled: true

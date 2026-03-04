@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Frontend build output
+brightpath-frontend/dist/
+
+# Java / Maven
+backend/target/
+
+# IDE
+.vscode/
+.idea/
+*.iml
