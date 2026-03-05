@@ -1,64 +1,33 @@
 # BrightPath LMS
 
-BrightPath LMS is a full-stack Learning Management System built to demonstrate production-style engineering across frontend, backend, security, and system design.
+BrightPath LMS is a full-stack Learning Management System inspired by platforms like D2L. It enables instructors to manage courses and students while giving students a clean experience to join courses and access course content.
 
-It supports instructor and student workflows including course management, enrollment, announcements, and assignment-oriented dashboards.
+## Live Demo
 
-## Project Overview
+Frontend: [https://brightpath-lms.netlify.app/](https://brightpath-lms.netlify.app/)
 
-This project was built as a portfolio-grade codebase to showcase:
-- Clean API and service-layer design
-- Role-based access control and secure authentication
-- Practical full-stack architecture with clear separation of concerns
-- Professional frontend UX and component architecture
+Backend API: [https://brightpath-lms.onrender.com](https://brightpath-lms.onrender.com)
 
-## Key Features
+## Demo Accounts
 
-- JWT-based authentication
-- Role-based authorization (admin, instructor, student)
-- Course creation and management
-- Student enrollment via join/invite flows
-- Course announcements/posts
-- Dashboard views for course activity and assignments
-- Flyway-driven database migrations
+### Instructor
+- Email: `instructor@brightpath.com`
+- Password: `demo123`
 
-## Tech Stack
+### Student
+- Email: `student@brightpath.com`
+- Password: `demo123`
 
-### Frontend
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- shadcn/ui
-- Axios
-- Framer Motion
+## Features
 
-### Backend
-- Spring Boot
-- Spring Security
-- JWT
-- Spring Data JPA / Hibernate
-- Flyway
-
-### Database
-- PostgreSQL (primary)
-- H2 (development/testing)
-
-## System Architecture
-
-```text
-React Frontend (Vite)
-        |
-        | REST/JSON over HTTP
-        v
-Spring Boot API
-        |
-        | JPA/Hibernate
-        v
-PostgreSQL
-```
-
-More detail: see [ARCHITECTURE.md](ARCHITECTURE.md).
+- JWT authentication
+- Role-based access (Instructor and Student)
+- Course management
+- Course join code generation and enrollment
+- Student enrollment management
+- Instructor course dashboard
+- Secure protected API endpoints
+- Production deployment (Netlify + Render)
 
 ## Screenshots
 
@@ -71,28 +40,65 @@ More detail: see [ARCHITECTURE.md](ARCHITECTURE.md).
 ### Join Course
 ![Join Course](screenshots/join-course.png)
 
-## Demo Credentials
+## Architecture
 
-Demo credentials are available in local development environments.
-See `.env.example` for configuration templates.
+BrightPath LMS uses a standard production web architecture:
 
-## Local Development Setup
+`Netlify (Frontend)` → `Render (Spring Boot API)` → `PostgreSQL`
 
-### Prerequisites
+```text
+React + Vite (Netlify)
+        |
+        | HTTPS REST API
+        v
+Spring Boot + Security + JWT (Render)
+        |
+        | JPA / Hibernate
+        v
+PostgreSQL
+```
 
-- Java 21
-- Maven 3.9+
-- Node.js 20+
-- npm 10+
+## Tech Stack
+
+### Frontend
+- React
+- Vite
+- React Router
+- Tailwind CSS
+- Axios
 
 ### Backend
+- Java
+- Spring Boot
+- Spring Security
+- JWT Authentication
+- Flyway
+
+### Database
+- PostgreSQL
+
+### Infrastructure
+- Netlify (frontend hosting)
+- Render (backend hosting)
+- Flyway (database migrations)
+
+## Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone <your-repo-url>
+cd D2L
+```
+
+### 2. Run backend
 
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 
-### Frontend
+### 3. Run frontend
 
 ```bash
 cd brightpath-frontend
@@ -100,14 +106,66 @@ npm install
 npm run dev
 ```
 
-## Deployment
+### 4. Configure environment variables
 
-Deployment notes and required environment variables are documented in [DEPLOYMENT.md](DEPLOYMENT.md).
+Create environment files as needed (`.env`, `.env.local`) and set backend secrets before running in non-local environments.
 
-## Contributing
+## Environment Variables
 
-Contribution workflow and style expectations are documented in [CONTRIBUTING.md](CONTRIBUTING.md).
+Backend requires the following variables:
+
+- `SPRING_DATASOURCE_URL`
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
+- `APP_JWT_SECRET`
+- `APP_JOIN_CODE_PEPPER`
+- `APP_CORS_ORIGINS`
+
+Example:
+
+```env
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/brightpath_lms
+SPRING_DATASOURCE_USERNAME=your_db_username
+SPRING_DATASOURCE_PASSWORD=your_db_password
+APP_JWT_SECRET=your_base64_32byte_secret
+APP_JOIN_CODE_PEPPER=your_join_code_pepper
+APP_CORS_ORIGINS=http://localhost:5173
+```
+
+## Database
+
+Database schema changes are managed with Flyway migrations.
+
+Migration location:
+
+```text
+backend/src/main/resources/db/migration
+```
+
+On backend startup, Flyway applies pending migrations automatically.
+
+## Project Structure
+
+```text
+D2L/
+├── backend/                  # Spring Boot API
+│   └── src/main/java/...    # Controllers, services, security, DTOs
+├── brightpath-frontend/     # React + Vite frontend
+│   └── src/                 # Pages, components, API client
+├── screenshots/             # README screenshots
+├── ARCHITECTURE.md
+├── DEPLOYMENT.md
+└── README.md
+```
+
+## Future Improvements
+
+- Assignment creation and submission workflows
+- Grading and rubric support
+- File upload handling
+- Notification system (in-app/email)
+- Expanded analytics and reporting
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE).
+MIT License. See [LICENSE](LICENSE).
