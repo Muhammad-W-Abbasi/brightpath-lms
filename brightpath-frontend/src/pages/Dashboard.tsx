@@ -31,12 +31,14 @@ type DashboardProps = {
 
 const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL ?? "instructor@brightpath.com";
 const TOKEN_STORAGE_KEY = "token";
+type DemoSelection = "" | "instructor" | "student";
 
 function Dashboard({ authUser, onAuthChange }: DashboardProps) {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState(authUser?.email ?? DEMO_EMAIL);
   const [password, setPassword] = useState("");
+  const [demoSelection, setDemoSelection] = useState<DemoSelection>("");
   const [role, setRole] = useState<Role>(authUser?.role ?? "");
   const [loading, setLoading] = useState(false);
 
@@ -161,6 +163,21 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
     }
   };
 
+  const handleDemoSelection = (selection: DemoSelection) => {
+    setDemoSelection(selection);
+    if (selection === "instructor") {
+      setEmail("instructor@brightpath.com");
+      setPassword("demo123");
+      return;
+    }
+
+    if (selection === "student") {
+      setEmail("student@brightpath.com");
+      setPassword("demo123");
+      return;
+    }
+  };
+
   useEffect(() => {
     if (!authUser?.role) {
       setRole("");
@@ -184,6 +201,23 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
               login();
             }}
           >
+            <label className="bp-label">
+              Try a demo account
+              <select
+                className="bp-input"
+                value={demoSelection}
+                onChange={(e) => handleDemoSelection(e.target.value as DemoSelection)}
+              >
+                <option value="">Select demo account</option>
+                <option value="instructor">Instructor Demo</option>
+                <option value="student">Student Demo</option>
+              </select>
+            </label>
+
+            {demoSelection ? (
+              <p className="text-sm text-[#52525b]">You are using a demo account.</p>
+            ) : null}
+
             <label className="bp-label">
               Email
               <input
