@@ -248,18 +248,23 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
               aria-busy={loading}
               aria-disabled={loading}
             >
-              {loading ? (
-                <>
-                  <span
-                    className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin"
+              <span>{loading ? "Signing in..." : "Log In"}</span>
+            </button>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-2">
+                <div className="text-center rounded-lg border border-[#e4e4e7] bg-white px-5 py-4 w-full">
+                  <div
+                    className="animate-spin h-8 w-8 border-4 border-gray-300 border-t-black rounded-full mx-auto"
                     aria-hidden="true"
                   />
-                  <span>Logging in...</span>
-                </>
-              ) : (
-                <span>Log In</span>
-              )}
-            </button>
+                  <p className="mt-3 text-gray-700 text-sm">Connecting to server...</p>
+                  <p className="text-xs text-gray-400">
+                    This may take a few seconds if the system is starting.
+                  </p>
+                </div>
+              </div>
+            ) : null}
           </form>
         </Card>
       </div>

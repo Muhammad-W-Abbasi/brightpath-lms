@@ -19,6 +19,32 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    console.log("Warmup: pinging backend...");
+
+    fetch("https://brightpath-lms.onrender.com/actuator/health", {
+      method: "GET",
+      signal: controller.signal,
+    })
+      .then((res) => {
+        console.log("Warmup: backend responded", res.status);
+      })
+      .catch(() => {
+        console.log("Warmup: backend unreachable (likely cold start)");
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+      });
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);
     if (!token) {
       setUser(null);
