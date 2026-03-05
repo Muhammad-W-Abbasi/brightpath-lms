@@ -16,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -25,13 +26,16 @@ public class SecurityConfig {
     private final RateLimitingFilter rateLimitingFilter;
     private final JsonAuthenticationEntryPoint authenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     public SecurityConfig(RateLimitingFilter rateLimitingFilter,
-                          JsonAuthenticationEntryPoint authenticationEntryPoint,
-                          JwtAuthenticationFilter jwtAuthenticationFilter) {
+                      JsonAuthenticationEntryPoint authenticationEntryPoint,
+                      JwtAuthenticationFilter jwtAuthenticationFilter,
+                      CorsConfigurationSource corsConfigurationSource) {
         this.rateLimitingFilter = rateLimitingFilter;
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.corsConfigurationSource = corsConfigurationSource;
     }
 
     @Bean
@@ -54,7 +58,7 @@ public class SecurityConfig {
 
         http
             .csrf(csrf -> csrf.disable())
-            .cors(Customizer.withDefaults())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .headers(headers -> headers
                 .frameOptions(frame -> {
                     if (allowH2Console) {
