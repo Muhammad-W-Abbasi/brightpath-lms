@@ -71,14 +71,15 @@ public class SecurityConfig {
                 )
             )
             .authorizeHttpRequests(auth -> {
-                auth.requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll();
-                auth.requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll();
-                auth.requestMatchers("/actuator/**").hasRole("ADMIN");
-                if (allowH2Console) {
-                    auth.requestMatchers("/h2-console/**").permitAll();
-                }
-                auth.anyRequest().authenticated();
-            })
+                    auth.requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll();
+                    auth.requestMatchers("/actuator/health").permitAll();
+                    auth.requestMatchers("/actuator/**").hasRole("ADMIN");
+                    if (allowH2Console) {
+                        auth.requestMatchers("/h2-console/**").permitAll();
+                    }
+                    auth.anyRequest().authenticated();
+                })
             .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // JWT must run before UsernamePasswordAuthenticationFilter to establish SecurityContext from bearer tokens.
