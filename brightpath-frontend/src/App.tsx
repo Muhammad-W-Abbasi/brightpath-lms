@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import axiosClient from "./api/axiosClient";
-import LoadingScreen from "./components/LoadingScreen";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import CoursePage from "./pages/CoursePage";
@@ -16,39 +15,24 @@ const TOKEN_STORAGE_KEY = "token";
 
 function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
     console.log("Warmup: pinging backend...");
 
-    fetch("https://brightpath-lms.onrender.com/actuator/health", {
-      method: "GET",
-      signal: controller.signal,
-    })
+    fetch("https://brightpath-lms.onrender.com/actuator/health")
       .then((res) => {
         console.log("Warmup: backend responded", res.status);
       })
       .catch(() => {
         console.log("Warmup: backend unreachable (likely cold start)");
       })
-      .finally(() => {
-        clearTimeout(timeout);
-      });
-
-    return () => {
-      clearTimeout(timeout);
-      controller.abort();
-    };
+      .finally(() => undefined);
   }, []);
 
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);
     if (!token) {
       setUser(null);
-      setAuthLoading(false);
       return;
     }
 
@@ -68,23 +52,15 @@ function App() {
       .catch(() => {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
         setUser(null);
-      })
-      .finally(() => setAuthLoading(false));
+      });
   }, []);
-
-  if (authLoading) {
-    return <LoadingScreen />;
-  }
 
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/dashboard" element={<Dashboard authUser={user} onAuthChange={setUser} />} />
-        <Route
-          path="/course/:id"
-          element={user?.role ? <CoursePage authUser={user} onAuthChange={setUser} /> : <Navigate to="/dashboard" replace />}
-        />
+        <Route path="/course/:id" element={<CoursePage authUser={user} onAuthChange={setUser} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
