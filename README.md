@@ -12,11 +12,11 @@ Backend API: [https://brightpath-lms.onrender.com](https://brightpath-lms.onrend
 
 ### Instructor
 - Email: `instructor@brightpath.com`
-- Password: `demo123`
+- Password: `instructor123`
 
 ### Student
-- Email: `student@brightpath.com`
-- Password: `demo123`
+- Email: `student1@brightpath.com`
+- Password: `student123`
 
 ## Features
 
