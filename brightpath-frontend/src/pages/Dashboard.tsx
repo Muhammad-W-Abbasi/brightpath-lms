@@ -28,6 +28,7 @@ function Dashboard() {
   const [email, setEmail] = useState(DEMO_EMAIL);
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("");
+  const [loading, setLoading] = useState(false);
 
   const [activeSection, setActiveSection] = useState<NavKey>("dashboard");
   const [courses, setCourses] = useState<Course[]>([]);
@@ -58,6 +59,11 @@ function Dashboard() {
   };
 
   const login = async () => {
+    if (loading) {
+      return;
+    }
+
+    setLoading(true);
     try {
       const loginResponse = await axiosClient.post("/auth/login", {
         email: email.trim(),
@@ -87,6 +93,8 @@ function Dashboard() {
         "Login failed: " +
           (err.response ? `${err.response.status} ${JSON.stringify(err.response.data)}` : err.message)
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -191,8 +199,24 @@ function Dashboard() {
               />
             </label>
 
-            <button type="submit" className="bp-btn bp-btn-primary">
-              Login
+            <button
+              type="submit"
+              className="bp-btn bp-btn-primary inline-flex items-center justify-center gap-2 min-w-[120px]"
+              disabled={loading}
+              aria-busy={loading}
+              aria-disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span
+                    className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin"
+                    aria-hidden="true"
+                  />
+                  <span>Logging in...</span>
+                </>
+              ) : (
+                <span>Log In</span>
+              )}
             </button>
           </form>
         </Card>
