@@ -5,7 +5,11 @@ import Layout from "../components/Layout";
 import Card from "../components/Card";
 import AnnouncementFeed from "../components/AnnouncementFeed";
 import CreateAnnouncement from "../components/CreateAnnouncement";
-import ClassListSidebar from "../components/ClassListSidebar";
+import JoinCodePanel from "../components/JoinCodePanel";
+import InviteStudentForm from "../components/InviteStudentForm";
+import StudentList from "../components/StudentList";
+import ConfirmActionModal from "../components/ConfirmActionModal";
+import Toast from "../components/Toast";
 
 const TOKEN_STORAGE_KEY = "token";
 
@@ -31,6 +35,9 @@ function CoursePage() {
   const [course, setCourse] = useState<Course | null>((location.state as any)?.course ?? null);
   const [posts, setPosts] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
+  const [removingStudent, setRemovingStudent] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
 
   const courseId = params.id ?? "";
   const isInstructor = role === "INSTRUCTOR" || role === "ADMIN";
@@ -109,6 +116,33 @@ function CoursePage() {
     await loadPosts();
   };
 
+  const showToast = (type: "success" | "error" | "info", message: string) => {
+    setToast({ type, message });
+  };
+
+  const hideToast = () => {
+    setToast(null);
+  };
+
+  const handleRemoveStudent = async () => {
+    if (!selectedStudent || removingStudent) {
+      return;
+    }
+
+    setRemovingStudent(true);
+    try {
+      await axiosClient.delete(`/courses/${courseId}/students/${selectedStudent.id}`);
+      setSelectedStudent(null);
+      await loadStudents();
+      showToast("success", "Student removed successfully.");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to remove student.");
+    } finally {
+      setRemovingStudent(false);
+    }
+  };
+
   if (!authEmail || !role || !course) {
     return (
       <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex items-center justify-center">
@@ -155,12 +189,51 @@ function CoursePage() {
             </Card>
           </div>
           {isInstructor && (
-            <Card className="bp-sidebar-card">
-              <ClassListSidebar students={students} />
-            </Card>
+            <div className="bp-feed-column">
+              <Card className="bp-sidebar-card">
+                <JoinCodePanel
+                  courseId={courseId}
+                  onCodeUpdated={(_, meta) =>
+                    showToast(meta?.copied ? "info" : "success", meta?.copied ? "Join code copied." : "New join code generated.")
+                  }
+                  onError={() => showToast("error", "Failed to update join code.")}
+                />
+              </Card>
+
+              <Card className="bp-sidebar-card">
+                <InviteStudentForm
+                  courseId={courseId}
+                  onInvited={async () => {
+                    await loadStudents();
+                    showToast("success", "Student invited successfully.");
+                  }}
+                  onError={() => showToast("error", "Failed to invite student.")}
+                />
+              </Card>
+
+              <Card className="bp-sidebar-card" title="Class List" subtitle="Manage enrolled students">
+                <StudentList students={students} onRemove={setSelectedStudent} />
+              </Card>
+            </div>
           )}
         </section>
       </div>
+
+      <ConfirmActionModal
+        isOpen={Boolean(selectedStudent)}
+        title="Remove student?"
+        message={
+          selectedStudent
+            ? `This will remove ${selectedStudent.displayName || selectedStudent.email} from the course.`
+            : ""
+        }
+        confirmLabel="Remove"
+        loading={removingStudent}
+        onConfirm={handleRemoveStudent}
+        onCancel={() => setSelectedStudent(null)}
+      />
+
+      <Toast visible={Boolean(toast)} type={toast?.type} message={toast?.message} onClose={hideToast} />
     </Layout>
   );
 }
