@@ -167,13 +167,13 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
     setDemoSelection(selection);
     if (selection === "instructor") {
       setEmail("instructor@brightpath.com");
-      setPassword("demo123");
+      setPassword("instructor123");
       return;
     }
 
     if (selection === "student") {
-      setEmail("student@brightpath.com");
-      setPassword("demo123");
+      setEmail("student1@brightpath.com");
+      setPassword("student123");
       return;
     }
   };
