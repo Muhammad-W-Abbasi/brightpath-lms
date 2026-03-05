@@ -14,6 +14,14 @@ import Toast from "../components/Toast";
 const TOKEN_STORAGE_KEY = "token";
 
 type Role = "ADMIN" | "INSTRUCTOR" | "STUDENT";
+type AuthUser = {
+  email: string;
+  role: Role;
+};
+type CoursePageProps = {
+  authUser: AuthUser | null;
+  onAuthChange: (user: AuthUser | null) => void;
+};
 
 type Course = {
   id: string;
@@ -26,12 +34,10 @@ type PostPayload = {
   content: string;
 };
 
-function CoursePage() {
+function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
   const navigate = useNavigate();
   const params = useParams();
   const location = useLocation();
-  const [authEmail, setAuthEmail] = useState<string>("");
-  const [role, setRole] = useState<Role | null>(null);
   const [course, setCourse] = useState<Course | null>((location.state as any)?.course ?? null);
   const [posts, setPosts] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
@@ -40,33 +46,17 @@ function CoursePage() {
   const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
 
   const courseId = params.id ?? "";
+  const role = authUser?.role ?? null;
+  const authEmail = authUser?.email ?? "";
   const isInstructor = role === "INSTRUCTOR" || role === "ADMIN";
 
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-    if (!token) {
+    if (!authUser?.role) {
       navigate("/dashboard");
       return;
     }
 
-    axiosClient
-      .get("/auth/me")
-      .then((res) => {
-        if (!res.data?.email || !res.data?.role) {
-          navigate("/dashboard");
-          return;
-        }
-        setAuthEmail(res.data.email);
-        setRole(res.data.role as Role);
-      })
-      .catch(() => {
-        localStorage.removeItem(TOKEN_STORAGE_KEY);
-        navigate("/dashboard");
-      });
-  }, [navigate]);
-
-  useEffect(() => {
-    if (!authEmail || !courseId) {
+    if (!courseId) {
       return;
     }
 
@@ -79,7 +69,7 @@ function CoursePage() {
           navigate("/dashboard");
         });
     }
-  }, [authEmail, courseId, course, navigate]);
+  }, [authUser?.role, courseId, course, navigate]);
 
   const loadPosts = async () => {
     if (!authEmail || !courseId) {
@@ -143,7 +133,7 @@ function CoursePage() {
     }
   };
 
-  if (!authEmail || !role || !course) {
+  if (!authUser?.role || !course) {
     return (
       <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex items-center justify-center">
         <p className="text-sm text-[var(--muted)]">Loading classroom...</p>
@@ -159,6 +149,7 @@ function CoursePage() {
       onNavigate={() => navigate("/dashboard")}
       onLogout={() => {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
+        onAuthChange(null);
         navigate("/dashboard");
       }}
       title={course.title}

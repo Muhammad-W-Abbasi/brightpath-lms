@@ -19,15 +19,25 @@ type Course = {
   description?: string;
 };
 
+type AuthUser = {
+  email: string;
+  role: "ADMIN" | "INSTRUCTOR" | "STUDENT";
+};
+
+type DashboardProps = {
+  authUser: AuthUser | null;
+  onAuthChange: (user: AuthUser | null) => void;
+};
+
 const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL ?? "instructor@brightpath.com";
 const TOKEN_STORAGE_KEY = "token";
 
-function Dashboard() {
+function Dashboard({ authUser, onAuthChange }: DashboardProps) {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState(DEMO_EMAIL);
+  const [email, setEmail] = useState(authUser?.email ?? DEMO_EMAIL);
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<Role>("");
+  const [role, setRole] = useState<Role>(authUser?.role ?? "");
   const [loading, setLoading] = useState(false);
 
   const [activeSection, setActiveSection] = useState<NavKey>("dashboard");
@@ -82,6 +92,10 @@ function Dashboard() {
       setRole(nextRole);
       if (meResponse.data.email) {
         setEmail(meResponse.data.email);
+        onAuthChange({
+          email: meResponse.data.email,
+          role: nextRole as AuthUser["role"],
+        });
       }
 
       setPassword("");
@@ -103,6 +117,7 @@ function Dashboard() {
     setActiveSection("dashboard");
     setCourses([]);
     localStorage.removeItem(TOKEN_STORAGE_KEY);
+    onAuthChange(null);
   };
 
   const openCourse = (courseId: string) => {
@@ -147,23 +162,16 @@ function Dashboard() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-    if (!token) {
+    if (!authUser?.role) {
+      setRole("");
+      setCourses([]);
       return;
     }
 
-    axiosClient
-      .get("/auth/me")
-      .then(async (res) => {
-        const nextRole = res.data.role as Role;
-        setRole(nextRole);
-        if (res.data.email) {
-          setEmail(res.data.email);
-        }
-        await loadCourses(nextRole);
-      })
-      .catch(() => localStorage.removeItem(TOKEN_STORAGE_KEY));
-  }, []);
+    setRole(authUser.role);
+    setEmail(authUser.email);
+    loadCourses(authUser.role);
+  }, [authUser?.email, authUser?.role]);
 
   if (!role) {
     return (
