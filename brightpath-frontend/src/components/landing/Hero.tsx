@@ -75,7 +75,7 @@ export default function Hero() {
 
           <motion.div whileHover={{ scale: 1.01, y: -1 }} transition={{ duration: 0.2, ease }}>
             <a
-              href="https://github.com"
+              href="https://github.com/Muhammad-W-Abbasi/brightpath-lms"
               target="_blank"
               rel="noreferrer"
               className="h-11 px-6 rounded-lg border border-[#e4e4e7] bg-white text-[#18181b] inline-flex items-center text-sm font-medium"
