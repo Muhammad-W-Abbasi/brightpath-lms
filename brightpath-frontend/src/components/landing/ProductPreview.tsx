@@ -28,7 +28,7 @@ export default function ProductPreview() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-[190px_1fr] h-[calc(100%-2.5rem)]">
+        <div className="grid grid-cols-[190px_1fr] h-[calc(100%-2.5rem)]">
           <aside className="border-r border-[#e4e4e7] bg-[#f8f9fb] p-4">
             <p className="font-mono text-[11px] uppercase tracking-widest text-[#71717a] mb-3">Navigation</p>
             <ul className="space-y-2 text-sm text-[#52525b]">
@@ -41,8 +41,8 @@ export default function ProductPreview() {
             </ul>
           </aside>
 
-          <div className="p-5 md:p-6 overflow-hidden">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="p-6 overflow-hidden">
+            <div className="grid grid-cols-4 gap-3">
               {[
                 ["12", "Courses"],
                 ["284", "Enrollments"],

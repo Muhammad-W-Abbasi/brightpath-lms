@@ -13,25 +13,9 @@ export const ContainerScroll = ({
   const { scrollYProgress } = useScroll({
     target: containerRef,
   });
-  const [isMobile, setIsMobile] = React.useState(false);
-
-  React.useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => {
-      window.removeEventListener("resize", checkMobile);
-    };
-  }, []);
-
-  const scaleDimensions = () => {
-    return isMobile ? [0.9, 0.7] : [1, 1.05];
-  };
 
   const rotate = useTransform(scrollYProgress, [0, 0.4], [0, 20]);
-  const scale = useTransform(scrollYProgress, [0, 0.4], scaleDimensions());
+  const scale = useTransform(scrollYProgress, [0, 0.4], [1, 1.05]);
   const translate = useTransform(scrollYProgress, [0, 0.4], [-40, 0]);
 
   return (

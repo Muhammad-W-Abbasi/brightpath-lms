@@ -23,6 +23,28 @@ const layers = [
   ["REST API", "JSON over HTTP with versioned endpoints"],
 ] as const;
 
+function Arrow({ label, delay }: { label: string; delay: number }) {
+  return (
+    <div className="flex flex-col items-center relative">
+      <motion.div
+        initial={{ opacity: 0, scaleY: 0 }}
+        whileInView={{ opacity: 1, scaleY: 1 }}
+        transition={{ duration: 0.45, delay, ease: "easeOut" }}
+        viewport={{ once: true, margin: "-80px" }}
+        className="flex flex-col items-center origin-top"
+      >
+        <div className="h-[78px] w-px bg-[#2563eb]/40" />
+        <svg width="8" height="6" viewBox="0 0 8 6" className="-mt-px block" aria-hidden="true">
+          <path d="M0.8 0.8L4 4.8L7.2 0.8" stroke="#2563eb" strokeOpacity="0.4" strokeLinecap="round" />
+        </svg>
+      </motion.div>
+      <p className="absolute left-full top-6 pl-3 whitespace-nowrap font-mono text-[10px] tracking-[0.06em] text-[#71717a]">
+        {label}
+      </p>
+    </div>
+  );
+}
+
 export default function ArchitectureSection() {
   return (
     <section className="py-28 border-t border-[#e4e4e7]">
@@ -60,83 +82,31 @@ export default function ArchitectureSection() {
             ))}
           </motion.div>
 
-          <motion.div variants={containerVariants} className="relative mx-auto w-full max-w-md h-[360px]">
+          <motion.div variants={containerVariants} className="flex flex-col items-center justify-center mx-auto w-full max-w-md">
             <motion.div
               variants={itemVariants}
-              transition={{ duration: 0.4, delay: 0 }}
-              className="absolute left-1/2 top-2 -translate-x-1/2 w-48 text-center rounded-lg border border-[#e4e4e7] bg-white px-6 py-3 font-mono text-sm text-[#18181b]"
+              className="w-48 text-center rounded-lg border border-[#e4e4e7] bg-white px-6 py-3 font-mono text-sm text-[#18181b]"
             >
               React UI
             </motion.div>
+
+            <Arrow label="HTTP / JWT" delay={0.48} />
+
             <motion.div
               variants={itemVariants}
-              transition={{ duration: 0.4, delay: 0.15 }}
-              className="absolute left-1/2 top-[140px] -translate-x-1/2 w-48 text-center rounded-lg border border-[#e4e4e7] bg-white px-6 py-3 font-mono text-sm text-[#18181b]"
+              className="w-48 text-center rounded-lg border border-[#e4e4e7] bg-white px-6 py-3 font-mono text-sm text-[#18181b]"
             >
               Spring Boot
             </motion.div>
+
+            <Arrow label="JDBC" delay={0.62} />
+
             <motion.div
               variants={itemVariants}
-              transition={{ duration: 0.4, delay: 0.3 }}
-              className="absolute left-1/2 bottom-2 -translate-x-1/2 w-48 text-center rounded-lg border border-[#e4e4e7] bg-white px-6 py-3 font-mono text-sm text-[#18181b]"
+              className="w-48 text-center rounded-lg border border-[#e4e4e7] bg-white px-6 py-3 font-mono text-sm text-[#18181b]"
             >
               PostgreSQL
             </motion.div>
-
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 360 360" fill="none" aria-hidden="true">
-              <motion.path
-                d="M180 54V132"
-                stroke="#2563eb"
-                strokeWidth="1"
-                strokeOpacity="0.4"
-                strokeLinecap="round"
-                initial={{ pathLength: 0 }}
-                whileInView={{ pathLength: 1 }}
-                transition={{ duration: 0.45, delay: 0.48, ease: "easeOut" }}
-                viewport={{ once: true, margin: "-80px" }}
-              />
-              <motion.path
-                d="M180 196V274"
-                stroke="#2563eb"
-                strokeWidth="1"
-                strokeOpacity="0.4"
-                strokeLinecap="round"
-                initial={{ pathLength: 0 }}
-                whileInView={{ pathLength: 1 }}
-                transition={{ duration: 0.45, delay: 0.62, ease: "easeOut" }}
-                viewport={{ once: true, margin: "-80px" }}
-              />
-              <motion.path
-                d="M176 128L180 132L184 128"
-                stroke="#2563eb"
-                strokeWidth="1"
-                strokeOpacity="0.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                initial={{ pathLength: 0 }}
-                whileInView={{ pathLength: 1 }}
-                transition={{ duration: 0.3, delay: 0.56, ease: "easeOut" }}
-                viewport={{ once: true, margin: "-80px" }}
-              />
-              <motion.path
-                d="M176 270L180 274L184 270"
-                stroke="#2563eb"
-                strokeWidth="1"
-                strokeOpacity="0.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                initial={{ pathLength: 0 }}
-                whileInView={{ pathLength: 1 }}
-                transition={{ duration: 0.3, delay: 0.7, ease: "easeOut" }}
-                viewport={{ once: true, margin: "-80px" }}
-              />
-              <text x="192" y="98" fill="#71717a" fontSize="10" fontFamily="monospace" letterSpacing="0.06em">
-                HTTP / JWT
-              </text>
-              <text x="192" y="238" fill="#71717a" fontSize="10" fontFamily="monospace" letterSpacing="0.06em">
-                JDBC
-              </text>
-            </svg>
           </motion.div>
         </div>
       </motion.div>
