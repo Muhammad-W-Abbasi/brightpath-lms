@@ -49,6 +49,15 @@ public class PostService {
         Course course = courseRepository.findById(courseId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Course not found"));
 
+        boolean isAdmin = hasRole(author.getRoles(), "ADMIN");
+        boolean isOwner = author.getId().equals(course.getOwnerUserId());
+        if (!isAdmin && !isOwner) {
+            throw new ApiException(
+                HttpStatus.FORBIDDEN,
+                "Instructors may only post to their own courses"
+            );
+        }
+
         Post post = new Post();
         post.setCourse(course);
         post.setAuthor(author);

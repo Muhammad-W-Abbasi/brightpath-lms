@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axiosClient from "../api/axiosClient";
+import axiosClient, { clearToken, setToken } from "../api/axiosClient";
 import Card from "../components/Card";
 import AppShell from "../components/app/AppShell";
 import SectionHeader from "../components/app/SectionHeader";
@@ -30,7 +30,6 @@ type DashboardProps = {
 };
 
 const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL ?? "instructor@brightpath.com";
-const TOKEN_STORAGE_KEY = "token";
 type DemoSelection = "" | "instructor" | "student";
 
 function Dashboard({ authUser, onAuthChange }: DashboardProps) {
@@ -87,7 +86,7 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
         throw new Error("Login response did not include a token.");
       }
 
-      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      setToken(token);
 
       const meResponse = await axiosClient.get("/auth/me");
       const nextRole = meResponse.data.role as Role;
@@ -118,7 +117,7 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
     setRole("");
     setActiveSection("dashboard");
     setCourses([]);
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    clearToken();
     onAuthChange(null);
   };
 

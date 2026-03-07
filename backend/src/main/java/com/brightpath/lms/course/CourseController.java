@@ -82,15 +82,17 @@ public class CourseController {
 
     @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @GetMapping("/{courseId}/students")
-    public List<StudentDto> getCourseStudents(@PathVariable("courseId") UUID courseId) {
-        return courseService.getStudentsByCourse(courseId);
+    public List<StudentDto> getCourseStudents(@PathVariable("courseId") UUID courseId,
+                                              Authentication authentication) {
+        return courseService.getStudentsByCourse(courseId, authentication.getName());
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @PostMapping("/{courseId}/invite")
     public ResponseEntity<Void> inviteStudent(@PathVariable("courseId") UUID courseId,
-                                              @Valid @RequestBody InviteStudentRequest request) {
-        courseService.inviteStudent(courseId, request);
+                                              @Valid @RequestBody InviteStudentRequest request,
+                                              Authentication authentication) {
+        courseService.inviteStudent(courseId, request, authentication.getName());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
@@ -105,13 +107,14 @@ public class CourseController {
 
     @PreAuthorize("hasAnyRole('ADMIN','INSTRUCTOR')")
     @PostMapping("/{courseId}/join-code")
-    public ResponseEntity<JoinCodeResponse> regenerateJoinCode(@PathVariable("courseId") UUID courseId) {
-        return ResponseEntity.ok(courseService.regenerateJoinCode(courseId));
+    public ResponseEntity<JoinCodeResponse> regenerateJoinCode(@PathVariable("courseId") UUID courseId,
+                                                               Authentication authentication) {
+        return ResponseEntity.ok(courseService.regenerateJoinCode(courseId, authentication.getName()));
     }
 
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/join")
-    public ResponseEntity<Void> joinCourseByCode(@RequestBody JoinCourseRequest request,
+    public ResponseEntity<Void> joinCourseByCode(@Valid @RequestBody JoinCourseRequest request,
                                                  Authentication authentication) {
         courseService.joinCourseByCode(authentication.getName(), request);
         return ResponseEntity.ok().build();

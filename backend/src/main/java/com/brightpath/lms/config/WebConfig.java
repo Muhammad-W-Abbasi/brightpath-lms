@@ -21,9 +21,10 @@ public class WebConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
                     .allowedOrigins(allowedOrigins.toArray(String[]::new))
-                    .allowedMethods("GET", "POST", "PUT", "DELETE")
-                    .allowedHeaders("Authorization", "Content-Type")
-                    .allowCredentials(true);
+                    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                    .allowedHeaders("Authorization", "Content-Type", "X-Request-Id")
+                    .allowCredentials(true)
+                    .maxAge(3600);
             }
         };
     }

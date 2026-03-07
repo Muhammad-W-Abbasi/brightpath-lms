@@ -172,8 +172,15 @@ public class CourseService {
     }
 
     @Transactional
-    public JoinCodeResponse regenerateJoinCode(UUID courseId) {
+    public JoinCodeResponse regenerateJoinCode(UUID courseId, String actorEmail) {
         Course course = getCourseById(courseId);
+        User actor = findUserByEmail(actorEmail);
+
+        boolean isAdmin = hasRole(actor.getRoles(), "ADMIN");
+        boolean isOwner = actor.getId().equals(course.getOwnerUserId());
+        if (!isAdmin && !isOwner) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Access denied");
+        }
 
         String rawCode;
         String lookup;
@@ -190,8 +197,15 @@ public class CourseService {
         return new JoinCodeResponse(rawCode);
     }
 
-    public List<StudentDto> getStudentsByCourse(UUID courseId) {
-        getCourseById(courseId);
+    public List<StudentDto> getStudentsByCourse(UUID courseId, String actorEmail) {
+        Course course = getCourseById(courseId);
+        User actor = findUserByEmail(actorEmail);
+
+        boolean isAdmin = hasRole(actor.getRoles(), "ADMIN");
+        boolean isOwner = actor.getId().equals(course.getOwnerUserId());
+        if (!isAdmin && !isOwner) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Access denied");
+        }
 
         List<Enrollment> enrollments = enrollmentRepository.findByCourseIdOrderByEnrolledAtAsc(courseId);
         if (enrollments.isEmpty()) {
@@ -217,8 +231,15 @@ public class CourseService {
     }
 
     @Transactional
-    public void inviteStudent(UUID courseId, InviteStudentRequest request) {
+    public void inviteStudent(UUID courseId, InviteStudentRequest request, String actorEmail) {
         Course course = getCourseById(courseId);
+        User actor = findUserByEmail(actorEmail);
+
+        boolean isAdmin = hasRole(actor.getRoles(), "ADMIN");
+        boolean isOwner = actor.getId().equals(course.getOwnerUserId());
+        if (!isAdmin && !isOwner) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Access denied");
+        }
 
         if (request == null || isBlank(request.getEmail())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Email is required");

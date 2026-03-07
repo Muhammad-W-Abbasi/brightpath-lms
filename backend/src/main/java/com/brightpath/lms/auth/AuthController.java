@@ -58,7 +58,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            return ResponseEntity.badRequest().body("Email already registered");
+            return ResponseEntity.ok("Registration received.");
         }
 
         User user = new User();
@@ -76,7 +76,7 @@ public class AuthController {
 
         userRepository.save(user);
 
-        return ResponseEntity.ok("User registered successfully");
+        return ResponseEntity.ok("Registration received.");
     }
 
     @PreAuthorize("isAuthenticated()")

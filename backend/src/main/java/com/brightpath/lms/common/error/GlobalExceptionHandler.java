@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
         log.error("Constraint violation at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
-        return ResponseEntity.status(status).body(build(status, ex.getMessage(), request));
+        return ResponseEntity.status(status).body(build(status, "Validation failed", request));
     }
 
     @ExceptionHandler(Exception.class)

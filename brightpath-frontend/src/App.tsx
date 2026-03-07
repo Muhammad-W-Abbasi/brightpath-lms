@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import axiosClient from "./api/axiosClient";
+import axiosClient, { clearToken, getToken } from "./api/axiosClient";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import CoursePage from "./pages/CoursePage";
@@ -10,8 +10,6 @@ type AuthUser = {
   email: string;
   role: "ADMIN" | "INSTRUCTOR" | "STUDENT";
 };
-
-const TOKEN_STORAGE_KEY = "token";
 
 function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -30,7 +28,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    const token = getToken();
     if (!token) {
       setUser(null);
       return;
@@ -46,11 +44,11 @@ function App() {
           });
           return;
         }
-        localStorage.removeItem(TOKEN_STORAGE_KEY);
+        clearToken();
         setUser(null);
       })
       .catch(() => {
-        localStorage.removeItem(TOKEN_STORAGE_KEY);
+        clearToken();
         setUser(null);
       });
   }, []);

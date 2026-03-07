@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axiosClient from "../api/axiosClient";
+import axiosClient, { clearToken } from "../api/axiosClient";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Layout from "../components/Layout";
 import Card from "../components/Card";
@@ -10,8 +10,6 @@ import InviteStudentForm from "../components/InviteStudentForm";
 import StudentList from "../components/StudentList";
 import ConfirmActionModal from "../components/ConfirmActionModal";
 import Toast from "../components/Toast";
-
-const TOKEN_STORAGE_KEY = "token";
 
 type Role = "ADMIN" | "INSTRUCTOR" | "STUDENT";
 type AuthUser = {
@@ -148,7 +146,7 @@ function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
       activeSection="my-courses"
       onNavigate={() => navigate("/dashboard")}
       onLogout={() => {
-        localStorage.removeItem(TOKEN_STORAGE_KEY);
+        clearToken();
         onAuthChange(null);
         navigate("/dashboard");
       }}

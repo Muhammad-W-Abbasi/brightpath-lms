@@ -2,6 +2,19 @@ import axios from "axios";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080/api";
+let authToken: string | null = null;
+
+export function setToken(token: string) {
+  authToken = token;
+}
+
+export function clearToken() {
+  authToken = null;
+}
+
+export function getToken() {
+  return authToken;
+}
 
 const axiosClient = axios.create({
   baseURL: API_BASE_URL,
@@ -9,11 +22,8 @@ const axiosClient = axios.create({
 });
 
 axiosClient.interceptors.request.use((config) => {
-  // Attach JWT to every API request so components stay auth-agnostic.
-  const token = localStorage.getItem("token");
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (authToken) {
+    config.headers.Authorization = `Bearer ${authToken}`;
   }
 
   return config;

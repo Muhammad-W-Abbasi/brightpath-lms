@@ -80,7 +80,7 @@ public class SecurityConfig {
                     auth.requestMatchers("/actuator/health").permitAll();
                     auth.requestMatchers("/actuator/**").hasRole("ADMIN");
                     if (allowH2Console) {
-                        auth.requestMatchers("/h2-console/**").permitAll();
+                        auth.requestMatchers("/h2-console/**").hasRole("ADMIN");
                     }
                     auth.anyRequest().authenticated();
                 })
