@@ -139,6 +139,26 @@
   animation: bpPageIn 220ms ease;
 }
 
+.dashboard-home-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 8px;
+  background-color: #f3f4f6;
+  color: #374151;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.dashboard-home-button:hover {
+  background-color: #e5e7eb;
+  color: #111827;
+  transform: translateY(-1px);
+}
+
 .bp-page {
   display: flex;
   flex-direction: column;

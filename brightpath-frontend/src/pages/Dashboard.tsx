@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axiosClient, { clearToken, setToken } from "../api/axiosClient";
 import Card from "../components/Card";
 import AppShell from "../components/app/AppShell";
@@ -291,6 +291,17 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
       email={email}
       onLogout={logout}
     >
+      <div className="mb-4">
+        <Link
+          to="/"
+          className="dashboard-home-button"
+          aria-label="Return to homepage"
+        >
+          <span aria-hidden="true">←</span>
+          Back to Home
+        </Link>
+      </div>
+
       {activeSection === "dashboard" ? (
         <>
           <SectionHeader
