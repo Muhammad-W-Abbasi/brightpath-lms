@@ -61,14 +61,14 @@ public class CourseController {
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
-    public List<Course> getAllCourses() {
-        return courseService.getAllCourses();
+    public List<Course> getAllCourses(Authentication authentication) {
+        return courseService.getAllCourses(authentication.getName());
     }
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
-    public Course getCourseById(@PathVariable("id") UUID id) {
-        return courseService.getCourseById(id);
+    public Course getCourseById(@PathVariable("id") UUID id, Authentication authentication) {
+        return courseService.getCourseById(id, authentication.getName());
     }
 
     @PreAuthorize("isAuthenticated()")

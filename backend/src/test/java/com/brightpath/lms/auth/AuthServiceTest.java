@@ -6,6 +6,7 @@ import com.brightpath.lms.auth.exception.InvalidCredentialsException;
 import com.brightpath.lms.auth.exception.TooManyLoginAttemptsException;
 import com.brightpath.lms.security.JwtService;
 import com.brightpath.lms.user.Role;
+import com.brightpath.lms.user.RoleRepository;
 import com.brightpath.lms.user.User;
 import com.brightpath.lms.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +25,7 @@ import static org.mockito.Mockito.when;
 class AuthServiceTest {
 
     private UserRepository userRepository;
+    private RoleRepository roleRepository;
     private PasswordEncoder passwordEncoder;
     private LoginAttemptLimiter loginAttemptLimiter;
     private AuthAuditLogger authAuditLogger;
@@ -33,12 +35,13 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
+        roleRepository = mock(RoleRepository.class);
         passwordEncoder = new BCryptPasswordEncoder();
         loginAttemptLimiter = new LoginAttemptLimiter();
         authAuditLogger = mock(AuthAuditLogger.class);
         jwtService = mock(JwtService.class);
         when(jwtService.generateToken("instructor@brightpath.com")).thenReturn("mock-jwt-token");
-        authService = new AuthService(userRepository, passwordEncoder, loginAttemptLimiter, authAuditLogger, jwtService);
+        authService = new AuthService(userRepository, roleRepository, passwordEncoder, loginAttemptLimiter, authAuditLogger, jwtService);
     }
 
     @Test

@@ -5,6 +5,9 @@
 .env
 .env.*
 !.env.example
+.env.local
+brightpath-frontend/.env
+brightpath-frontend/.env.local
 
 # Node
 node_modules/

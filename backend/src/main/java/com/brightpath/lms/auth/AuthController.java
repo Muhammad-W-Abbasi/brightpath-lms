@@ -6,7 +6,6 @@ import com.brightpath.lms.auth.dto.LoginResponse;
 import com.brightpath.lms.auth.dto.RegisterRequest;
 import com.brightpath.lms.security.IpUtils;
 import com.brightpath.lms.user.Role;
-import com.brightpath.lms.user.RoleRepository;
 import com.brightpath.lms.user.User;
 import com.brightpath.lms.user.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,16 +13,12 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Set;
 
 @RestController
@@ -31,17 +26,10 @@ import java.util.Set;
 public class AuthController {
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
 
-    public AuthController(UserRepository userRepository,
-                          RoleRepository roleRepository,
-                          PasswordEncoder passwordEncoder,
-                          AuthService authService) {
+    public AuthController(UserRepository userRepository, AuthService authService) {
         this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.passwordEncoder = passwordEncoder;
         this.authService = authService;
     }
 
@@ -57,26 +45,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            return ResponseEntity.ok("Registration received.");
-        }
-
-        User user = new User();
-        user.setEmail(request.getEmail());
-        user.setFullName(request.getFullName());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setEmailVerified(false);
-        user.setCreatedAt(LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC));
-        user.setUpdatedAt(LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC));
-
-        Role studentRole = roleRepository.findByName("STUDENT")
-            .orElseThrow(() -> new IllegalStateException("STUDENT role not found"));
-        // Default all self-registrations to STUDENT.
-        user.getRoles().add(studentRole);
-
-        userRepository.save(user);
-
-        return ResponseEntity.ok("Registration received.");
+        return ResponseEntity.ok(authService.register(request));
     }
 
     @PreAuthorize("isAuthenticated()")

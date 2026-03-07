@@ -1,13 +1,15 @@
-INSERT INTO users (id, email, password_hash, email_verified, full_name, is_admin, created_at, updated_at)
-SELECT '11111111-1111-1111-1111-111111111111', 'instructor@brightpath.com', '$2a$10$V3Tyoao/fdHUtqvek9thYu3oAWKgUHr1AvmNOpIIQoE3b6whTNsLu', TRUE, 'Instructor Demo', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+-- Demo user passwords are stored only as bcrypt hashes in migrations.
+-- Runtime demo credentials are externalized via environment variables in DataSeeder.
+INSERT INTO users (id, email, password_hash, email_verified, full_name, created_at, updated_at)
+SELECT '11111111-1111-1111-1111-111111111111', 'instructor@brightpath.com', '$2a$10$V3Tyoao/fdHUtqvek9thYu3oAWKgUHr1AvmNOpIIQoE3b6whTNsLu', TRUE, 'Instructor Demo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'instructor@brightpath.com');
 
-INSERT INTO users (id, email, password_hash, email_verified, full_name, is_admin, created_at, updated_at)
-SELECT '22222222-2222-2222-2222-222222222222', 'student1@brightpath.com', '$2a$10$UsRpj7XL0PrZq4T2BngSG.iBuIMMty0u0xLGvCEf2j9BzLs4nCIvS', TRUE, 'Student One', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+INSERT INTO users (id, email, password_hash, email_verified, full_name, created_at, updated_at)
+SELECT '22222222-2222-2222-2222-222222222222', 'student1@brightpath.com', '$2a$10$UsRpj7XL0PrZq4T2BngSG.iBuIMMty0u0xLGvCEf2j9BzLs4nCIvS', TRUE, 'Student One', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'student1@brightpath.com');
 
-INSERT INTO users (id, email, password_hash, email_verified, full_name, is_admin, created_at, updated_at)
-SELECT '33333333-3333-3333-3333-333333333333', 'student2@brightpath.com', '$2a$10$UsRpj7XL0PrZq4T2BngSG.iBuIMMty0u0xLGvCEf2j9BzLs4nCIvS', TRUE, 'Student Two', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+INSERT INTO users (id, email, password_hash, email_verified, full_name, created_at, updated_at)
+SELECT '33333333-3333-3333-3333-333333333333', 'student2@brightpath.com', '$2a$10$UsRpj7XL0PrZq4T2BngSG.iBuIMMty0u0xLGvCEf2j9BzLs4nCIvS', TRUE, 'Student Two', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'student2@brightpath.com');
 
 INSERT INTO user_roles (user_id, role_id)

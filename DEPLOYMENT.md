@@ -14,12 +14,8 @@ npm run build
 dist
 ```
 
-- Environment variables:
-
-```text
-VITE_API_BASE_URL=https://your-backend-domain/api
-VITE_DEMO_EMAIL=instructor@brightpath.com
-```
+- Frontend environment variables are defined via:
+`brightpath-frontend/.env.example`
 
 ## Backend (Render)
 
@@ -36,17 +32,8 @@ mvn clean package
 java -jar target/brightpath-lms-backend-0.0.1-SNAPSHOT.jar
 ```
 
-- Required environment variables:
-
-```text
-SPRING_PROFILES_ACTIVE=prod
-SPRING_DATASOURCE_URL=jdbc:postgresql://...
-SPRING_DATASOURCE_USERNAME=...
-SPRING_DATASOURCE_PASSWORD=...
-APP_JWT_SECRET=...
-APP_JOIN_CODE_PEPPER=...
-APP_CORS_ORIGINS=https://your-frontend-domain
-```
+- Required backend variables:
+`SPRING_PROFILES_ACTIVE`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `APP_JWT_SECRET`, `APP_JOIN_CODE_PEPPER`, `APP_CORS_ORIGINS`
 
 ## Database (Neon / Managed PostgreSQL)
 
@@ -56,5 +43,5 @@ APP_CORS_ORIGINS=https://your-frontend-domain
 
 ## Notes
 
-- Do not commit `.env` files with real secrets
+- Use `brightpath-frontend/.env.example` as the only committed env template
 - Use platform secret managers for production credentials

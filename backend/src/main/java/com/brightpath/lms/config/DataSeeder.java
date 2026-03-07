@@ -21,15 +21,22 @@ public class DataSeeder {
     private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
 
     private static final String INSTRUCTOR_EMAIL = "instructor@brightpath.com";
-    private static final String INSTRUCTOR_PASSWORD = "instructor123";
     private static final String STUDENT_EMAIL = "student1@brightpath.com";
-    private static final String STUDENT_PASSWORD = "student123";
 
     @Bean
     public CommandLineRunner seedDemoUsers(UserRepository userRepository,
                                            RoleRepository roleRepository,
                                            PasswordEncoder passwordEncoder) {
         return args -> {
+            String instructorPassword = System.getenv().getOrDefault(
+                "DEMO_INSTRUCTOR_PASSWORD",
+                "instructor123"
+            );
+            String studentPassword = System.getenv().getOrDefault(
+                "DEMO_STUDENT_PASSWORD",
+                "student123"
+            );
+
             // Seed demo accounts only for empty datasets so production/real data is never altered.
             if (userRepository.count() > 0) {
                 return;
@@ -43,13 +50,13 @@ public class DataSeeder {
             User instructor = buildUser(
                 INSTRUCTOR_EMAIL,
                 "Demo Instructor",
-                passwordEncoder.encode(INSTRUCTOR_PASSWORD),
+                passwordEncoder.encode(instructorPassword),
                 instructorRole
             );
             User student = buildUser(
                 STUDENT_EMAIL,
                 "Demo Student",
-                passwordEncoder.encode(STUDENT_PASSWORD),
+                passwordEncoder.encode(studentPassword),
                 studentRole
             );
 

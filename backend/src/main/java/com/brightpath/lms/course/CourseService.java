@@ -78,8 +78,24 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
-    public List<Course> getAllCourses() {
-        return courseRepository.findAll();
+    public List<Course> getAllCourses(String actorEmail) {
+        User actor = findUserByEmail(actorEmail);
+        if (hasRole(actor.getRoles(), "ADMIN")) {
+            return courseRepository.findAll();
+        }
+
+        Map<UUID, Course> accessibleCourses = new LinkedHashMap<>();
+
+        for (Course course : courseRepository.findByOwnerUserIdOrderByCreatedAtDesc(actor.getId())) {
+            accessibleCourses.put(course.getId(), course);
+        }
+
+        for (Enrollment enrollment : enrollmentRepository.findByUserIdOrderByEnrolledAtDesc(actor.getId())) {
+            courseRepository.findById(enrollment.getCourseId())
+                .ifPresent(course -> accessibleCourses.putIfAbsent(course.getId(), course));
+        }
+
+        return new ArrayList<>(accessibleCourses.values());
     }
 
     public List<Course> getInstructorCourses(String email) {
@@ -118,6 +134,13 @@ public class CourseService {
     public Course getCourseById(UUID id) {
         return courseRepository.findById(id)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Course not found"));
+    }
+
+    public Course getCourseById(UUID id, String actorEmail) {
+        Course course = getCourseById(id);
+        User actor = findUserByEmail(actorEmail);
+        ensureCourseAccess(course, actor);
+        return course;
     }
 
     @Transactional
@@ -352,5 +375,17 @@ public class CourseService {
             return "INSTRUCTOR";
         }
         return "STUDENT";
+    }
+
+    private void ensureCourseAccess(Course course, User actor) {
+        if (!hasCourseAccess(course, actor)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+    }
+
+    private boolean hasCourseAccess(Course course, User actor) {
+        return hasRole(actor.getRoles(), "ADMIN")
+            || actor.getId().equals(course.getOwnerUserId())
+            || enrollmentRepository.existsByCourseIdAndUserId(course.getId(), actor.getId());
     }
 }

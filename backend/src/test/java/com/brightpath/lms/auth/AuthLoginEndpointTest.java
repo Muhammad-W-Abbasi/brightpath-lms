@@ -3,13 +3,10 @@ package com.brightpath.lms.auth;
 import com.brightpath.lms.auth.dto.LoginResponse;
 import com.brightpath.lms.auth.exception.InvalidCredentialsException;
 import com.brightpath.lms.auth.exception.TooManyLoginAttemptsException;
-import com.brightpath.lms.user.RoleRepository;
 import com.brightpath.lms.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -30,10 +27,8 @@ class AuthLoginEndpointTest {
     void setUp() {
         authService = mock(AuthService.class);
         UserRepository userRepository = mock(UserRepository.class);
-        RoleRepository roleRepository = mock(RoleRepository.class);
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-        AuthController authController = new AuthController(userRepository, roleRepository, passwordEncoder, authService);
+        AuthController authController = new AuthController(userRepository, authService);
         mockMvc = MockMvcBuilders.standaloneSetup(authController)
             .setControllerAdvice(new AuthExceptionHandler())
             .build();

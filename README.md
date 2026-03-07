@@ -108,7 +108,7 @@ npm run dev
 
 ### 4. Configure environment variables
 
-Create environment files as needed (`.env`, `.env.local`) and set backend secrets before running in non-local environments.
+Use the committed template at [`brightpath-frontend/.env.example`](brightpath-frontend/.env.example) for frontend environment configuration.
 
 ## Environment Variables
 
@@ -120,17 +120,7 @@ Backend requires the following variables:
 - `APP_JWT_SECRET`
 - `APP_JOIN_CODE_PEPPER`
 - `APP_CORS_ORIGINS`
-
-Example:
-
-```env
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/brightpath_lms
-SPRING_DATASOURCE_USERNAME=your_db_username
-SPRING_DATASOURCE_PASSWORD=your_db_password
-APP_JWT_SECRET=your_base64_32byte_secret
-APP_JOIN_CODE_PEPPER=your_join_code_pepper
-APP_CORS_ORIGINS=http://localhost:5173
-```
+See `brightpath-frontend/.env.example` for frontend env keys. Configure backend variables in your deployment secret manager.
 
 ## Database
 

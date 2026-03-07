@@ -24,9 +24,6 @@ public class User {
     @Column(name = "FULL_NAME")
     private String fullName;
 
-    @Column(name = "IS_ADMIN")
-    private Boolean isAdmin;
-
     @Column(name = "EMAIL_VERIFIED")
     private Boolean emailVerified;
 

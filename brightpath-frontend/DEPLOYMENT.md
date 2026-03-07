@@ -8,6 +8,6 @@ Build command:
 Publish directory:
 `dist`
 
-Environment variable required:
+Frontend environment variables are defined in:
 
-`VITE_API_BASE_URL=https://your-backend-domain/api`
+`brightpath-frontend/.env.example`

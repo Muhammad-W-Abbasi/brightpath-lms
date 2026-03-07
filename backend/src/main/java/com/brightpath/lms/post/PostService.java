@@ -9,6 +9,9 @@ import com.brightpath.lms.post.dto.PostResponse;
 import com.brightpath.lms.user.Role;
 import com.brightpath.lms.user.User;
 import com.brightpath.lms.user.UserRepository;
+import org.owasp.html.HtmlPolicyBuilder;
+import org.owasp.html.PolicyFactory;
+import org.owasp.html.Sanitizers;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,10 @@ import java.util.UUID;
 
 @Service
 public class PostService {
+    private static final PolicyFactory TITLE_SANITIZER = new HtmlPolicyBuilder().toFactory();
+    private static final PolicyFactory BODY_SANITIZER = Sanitizers.FORMATTING
+        .and(Sanitizers.BLOCKS)
+        .and(Sanitizers.LINKS);
 
     private final PostRepository postRepository;
     private final CourseRepository courseRepository;
@@ -61,14 +68,14 @@ public class PostService {
         Post post = new Post();
         post.setCourse(course);
         post.setAuthor(author);
-        post.setTitle(request.getTitle().trim());
-        post.setContent(request.getContent().trim());
+        post.setTitle(TITLE_SANITIZER.sanitize(request.getTitle().trim()));
+        post.setContent(BODY_SANITIZER.sanitize(request.getContent().trim()));
 
         Post saved = postRepository.save(post);
         return toResponse(saved);
     }
 
-    public List<PostResponse> getCoursePosts(UUID courseId) {
+    private List<PostResponse> getCoursePosts(UUID courseId) {
         return postRepository.findByCourseIdOrderByCreatedAtDesc(courseId)
             .stream()
             .map(this::toResponse)
@@ -79,13 +86,14 @@ public class PostService {
         User viewer = userRepository.findByEmail(viewerEmail)
             .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Authenticated user not found"));
 
-        courseRepository.findById(courseId)
+        Course course = courseRepository.findById(courseId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Course not found"));
 
-        boolean privileged = hasRole(viewer.getRoles(), "INSTRUCTOR") || hasRole(viewer.getRoles(), "ADMIN");
+        boolean isAdmin = hasRole(viewer.getRoles(), "ADMIN");
+        boolean isOwner = viewer.getId().equals(course.getOwnerUserId());
         boolean enrolled = enrollmentRepository.existsByCourseIdAndUserId(courseId, viewer.getId());
 
-        if (!privileged && !enrolled) {
+        if (!isAdmin && !isOwner && !enrolled) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Not allowed to view posts for this course");
         }
 

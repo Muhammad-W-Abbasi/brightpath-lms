@@ -18,7 +18,6 @@ export function getToken() {
 
 const axiosClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
 });
 
 axiosClient.interceptors.request.use((config) => {
