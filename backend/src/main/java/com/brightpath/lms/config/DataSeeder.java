@@ -13,6 +13,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
 
 @Configuration
 @Profile({"dev", "demo"})
@@ -28,13 +30,13 @@ public class DataSeeder {
                                            RoleRepository roleRepository,
                                            PasswordEncoder passwordEncoder) {
         return args -> {
-            String instructorPassword = System.getenv().getOrDefault(
+            String instructorPassword = resolveDemoPassword(
                 "DEMO_INSTRUCTOR_PASSWORD",
-                "instructor123"
+                "Generated demo instructor password: {}"
             );
-            String studentPassword = System.getenv().getOrDefault(
+            String studentPassword = resolveDemoPassword(
                 "DEMO_STUDENT_PASSWORD",
-                "student123"
+                "Generated demo student password: {}"
             );
 
             // Seed demo accounts only for empty datasets so production/real data is never altered.
@@ -77,5 +79,15 @@ public class DataSeeder {
         user.setUpdatedAt(LocalDateTime.now());
         user.getRoles().add(role);
         return user;
+    }
+
+    private String resolveDemoPassword(String envVar, String generatedLogPattern) {
+        return Optional.ofNullable(System.getenv(envVar))
+            .filter(value -> !value.isBlank())
+            .orElseGet(() -> {
+                String generatedPassword = UUID.randomUUID().toString();
+                log.warn(generatedLogPattern, generatedPassword);
+                return generatedPassword;
+            });
     }
 }
