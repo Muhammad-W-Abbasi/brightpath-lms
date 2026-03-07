@@ -193,6 +193,17 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
     return (
       <div className="bp-login-wrapper">
         <Card className="bp-login-card" title="BrightPath LMS" subtitle="Sign in to continue">
+          <div className="mb-3">
+            <Link
+              to="/"
+              className="dashboard-home-button"
+              aria-label="Return to homepage"
+            >
+              <span aria-hidden="true">←</span>
+              Back to Home
+            </Link>
+          </div>
+
           <form
             className="bp-form"
             onSubmit={(e) => {
@@ -291,17 +302,6 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
       email={email}
       onLogout={logout}
     >
-      <div className="mb-4">
-        <Link
-          to="/"
-          className="dashboard-home-button"
-          aria-label="Return to homepage"
-        >
-          <span aria-hidden="true">←</span>
-          Back to Home
-        </Link>
-      </div>
-
       {activeSection === "dashboard" ? (
         <>
           <SectionHeader
