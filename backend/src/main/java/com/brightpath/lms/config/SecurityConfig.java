@@ -3,6 +3,7 @@ package com.brightpath.lms.config;
 import com.brightpath.lms.security.JsonAuthenticationEntryPoint;
 import com.brightpath.lms.security.JwtAuthenticationFilter;
 import com.brightpath.lms.security.RateLimitingFilter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -31,7 +32,7 @@ public class SecurityConfig {
     public SecurityConfig(RateLimitingFilter rateLimitingFilter,
                       JsonAuthenticationEntryPoint authenticationEntryPoint,
                       JwtAuthenticationFilter jwtAuthenticationFilter,
-                      CorsConfigurationSource corsConfigurationSource) {
+                      @Qualifier("corsConfigurationSource") CorsConfigurationSource corsConfigurationSource) {
         this.rateLimitingFilter = rateLimitingFilter;
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
