@@ -5,9 +5,9 @@ import com.brightpath.lms.auth.dto.LoginRequest;
 import com.brightpath.lms.auth.dto.LoginResponse;
 import com.brightpath.lms.auth.dto.RegisterRequest;
 import com.brightpath.lms.security.IpUtils;
-import com.brightpath.lms.user.Role;
 import com.brightpath.lms.user.User;
 import com.brightpath.lms.user.UserRepository;
+import com.brightpath.lms.user.RoleUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -18,8 +18,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -54,17 +52,7 @@ public class AuthController {
         User user = userRepository.findByEmail(authentication.getName())
             .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 
-        String role = resolvePrimaryRole(user.getRoles());
+        String role = RoleUtils.resolvePrimaryRole(user.getRoles());
         return ResponseEntity.ok(new AuthMeResponse(user.getEmail(), role));
-    }
-
-    private String resolvePrimaryRole(Set<Role> roles) {
-        if (roles.stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getName()))) {
-            return "ADMIN";
-        }
-        if (roles.stream().anyMatch(r -> "INSTRUCTOR".equalsIgnoreCase(r.getName()))) {
-            return "INSTRUCTOR";
-        }
-        return "STUDENT";
     }
 }

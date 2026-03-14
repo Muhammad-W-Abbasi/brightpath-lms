@@ -10,21 +10,13 @@ import InviteStudentForm from "../components/InviteStudentForm";
 import StudentList from "../components/StudentList";
 import ConfirmActionModal from "../components/ConfirmActionModal";
 import Toast from "../components/Toast";
+import CourseTasksPanel from "../components/tasks/CourseTasksPanel";
+import type { AuthUser, Course, CourseTask, CourseTaskInput, Post, Student, ToastState } from "../types";
+import { getErrorMessage } from "../utils/api";
 
-type Role = "ADMIN" | "INSTRUCTOR" | "STUDENT";
-type AuthUser = {
-  email: string;
-  role: Role;
-};
 type CoursePageProps = {
   authUser: AuthUser | null;
   onAuthChange: (user: AuthUser | null) => void;
-};
-
-type Course = {
-  id: string;
-  title: string;
-  description?: string;
 };
 
 type PostPayload = {
@@ -32,16 +24,22 @@ type PostPayload = {
   content: string;
 };
 
+type CourseTab = "announcements" | "assignments";
+
 function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
   const navigate = useNavigate();
   const params = useParams();
   const location = useLocation();
-  const [course, setCourse] = useState<Course | null>((location.state as any)?.course ?? null);
-  const [posts, setPosts] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
+  const navigationState = location.state as { course?: Course } | null;
+  const [course, setCourse] = useState<Course | null>(navigationState?.course ?? null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [tasks, setTasks] = useState<CourseTask[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [removingStudent, setRemovingStudent] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [activeTab, setActiveTab] = useState<CourseTab>("announcements");
+  const [loadingTasks, setLoadingTasks] = useState(false);
 
   const courseId = params.id ?? "";
   const role = authUser?.role ?? null;
@@ -62,8 +60,8 @@ function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
       axiosClient
         .get(`/courses/${courseId}`)
         .then((res) => setCourse(res.data))
-        .catch(() => {
-          alert("Failed to load course");
+        .catch((error) => {
+          alert(getErrorMessage(error, "Failed to load course"));
           navigate("/dashboard");
         });
     }
@@ -85,12 +83,26 @@ function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
     setStudents(res.data);
   };
 
+  const loadTasks = async () => {
+    if (!courseId) {
+      return;
+    }
+
+    setLoadingTasks(true);
+    try {
+      const response = await axiosClient.get(`/courses/${courseId}/tasks`);
+      setTasks(Array.isArray(response.data) ? response.data : []);
+    } finally {
+      setLoadingTasks(false);
+    }
+  };
+
   useEffect(() => {
     if (!authEmail || !role) {
       return;
     }
     const load = async () => {
-      const calls = [loadPosts()];
+      const calls = [loadPosts(), loadTasks()];
       if (isInstructor) {
         calls.push(loadStudents());
       }
@@ -102,6 +114,57 @@ function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
   const createAnnouncement = async (payload: PostPayload) => {
     await axiosClient.post(`/courses/${courseId}/posts`, payload);
     await loadPosts();
+  };
+
+  const createTask = async (input: CourseTaskInput) => {
+    try {
+      await axiosClient.post(`/courses/${courseId}/tasks`, input);
+      await loadTasks();
+      showToast("success", "Task created successfully.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to create task."));
+      throw error;
+    }
+  };
+
+  const updateTask = async (taskId: string, input: CourseTaskInput) => {
+    try {
+      await axiosClient.put(`/courses/${courseId}/tasks/${taskId}`, input);
+      await loadTasks();
+      showToast("success", "Task updated successfully.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to update task."));
+      throw error;
+    }
+  };
+
+  const deleteTask = async (taskId: string) => {
+    try {
+      await axiosClient.delete(`/courses/${courseId}/tasks/${taskId}`);
+      await loadTasks();
+      showToast("success", "Task deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to delete task."));
+      throw error;
+    }
+  };
+
+  const toggleTaskCompletion = async (task: CourseTask, completed: boolean) => {
+    try {
+      const response = await axiosClient.put(`/courses/${courseId}/tasks/${task.id}/completion`, { completed });
+      const updatedTask = response.data as CourseTask;
+      setTasks((previousTasks) =>
+        previousTasks.map((existingTask) => (existingTask.id === updatedTask.id ? updatedTask : existingTask))
+      );
+      showToast("success", completed ? "Task marked complete." : "Task marked incomplete.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to update task status."));
+      throw error;
+    }
   };
 
   const showToast = (type: "success" | "error" | "info", message: string) => {
@@ -123,9 +186,9 @@ function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
       setSelectedStudent(null);
       await loadStudents();
       showToast("success", "Student removed successfully.");
-    } catch (err) {
-      console.error(err);
-      showToast("error", "Failed to remove student.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to remove student."));
     } finally {
       setRemovingStudent(false);
     }
@@ -166,46 +229,92 @@ function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
           <p className="bp-muted">Classroom announcements and updates</p>
         </Card>
 
-        <section className="bp-classroom-layout">
-          <div className="bp-feed-column">
-            {isInstructor && (
-              <Card>
-                <CreateAnnouncement onCreate={createAnnouncement} />
-              </Card>
-            )}
-            <Card title="Announcements Feed" subtitle="Recent classroom updates">
-              <AnnouncementFeed posts={posts} />
-            </Card>
-          </div>
-          {isInstructor && (
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: "announcements", label: "Announcements" },
+            { key: "assignments", label: "Assignments" },
+          ].map((tab) => {
+            const active = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key as CourseTab)}
+                className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                  active ? "bg-blue-600 text-white" : "border border-[#e4e4e7] bg-white text-[#18181b] hover:bg-[#f8f9fb]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {activeTab === "announcements" ? (
+          <section className="bp-classroom-layout">
             <div className="bp-feed-column">
-              <Card className="bp-sidebar-card">
-                <JoinCodePanel
-                  courseId={courseId}
-                  onCodeUpdated={(_, meta) =>
-                    showToast(meta?.copied ? "info" : "success", meta?.copied ? "Join code copied." : "New join code generated.")
-                  }
-                  onError={() => showToast("error", "Failed to update join code.")}
-                />
-              </Card>
-
-              <Card className="bp-sidebar-card">
-                <InviteStudentForm
-                  courseId={courseId}
-                  onInvited={async () => {
-                    await loadStudents();
-                    showToast("success", "Student invited successfully.");
-                  }}
-                  onError={() => showToast("error", "Failed to invite student.")}
-                />
-              </Card>
-
-              <Card className="bp-sidebar-card" title="Class List" subtitle="Manage enrolled students">
-                <StudentList students={students} onRemove={setSelectedStudent} />
+              {isInstructor && (
+                <Card>
+                  <CreateAnnouncement onCreate={createAnnouncement} />
+                </Card>
+              )}
+              <Card title="Announcements Feed" subtitle="Recent classroom updates">
+                <AnnouncementFeed posts={posts} />
               </Card>
             </div>
-          )}
-        </section>
+            {isInstructor && (
+              <div className="bp-feed-column">
+                <Card className="bp-sidebar-card">
+                  <JoinCodePanel
+                    courseId={courseId}
+                    onCodeUpdated={(_, meta) =>
+                      showToast(meta?.copied ? "info" : "success", meta?.copied ? "Join code copied." : "New join code generated.")
+                    }
+                    onError={() => showToast("error", "Failed to update join code.")}
+                  />
+                </Card>
+
+                <Card className="bp-sidebar-card">
+                  <InviteStudentForm
+                    courseId={courseId}
+                    onInvited={async () => {
+                      await loadStudents();
+                      showToast("success", "Student invited successfully.");
+                    }}
+                    onError={() => showToast("error", "Failed to invite student.")}
+                  />
+                </Card>
+
+                <Card className="bp-sidebar-card" title="Class List" subtitle="Manage enrolled students">
+                  <StudentList students={students} onRemove={setSelectedStudent} />
+                </Card>
+              </div>
+            )}
+          </section>
+        ) : (
+          <section className="space-y-6">
+            <CourseTasksPanel
+              role={role}
+              tasks={tasks}
+              loading={loadingTasks}
+              courseScoped
+              onCreate={isInstructor ? createTask : undefined}
+              onUpdate={isInstructor ? updateTask : undefined}
+              onDelete={isInstructor ? deleteTask : undefined}
+              onToggleCompletion={!isInstructor ? toggleTaskCompletion : undefined}
+            />
+            {isInstructor ? (
+              <Card
+                title="Instructor Note"
+                subtitle="These are lightweight reminders, not graded submissions."
+              >
+                <p className="text-sm text-[#52525b]">
+                  Use this tab for reading reminders, prep work, and checklist-style tasks that students can mark complete for themselves.
+                </p>
+              </Card>
+            ) : null}
+          </section>
+        )}
       </div>
 
       <ConfirmActionModal

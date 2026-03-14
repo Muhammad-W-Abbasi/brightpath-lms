@@ -1,15 +1,11 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import axiosClient, { clearToken, getToken } from "./api/axiosClient";
+import axiosClient, { clearToken, getHealthcheckUrl, getToken } from "./api/axiosClient";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import CoursePage from "./pages/CoursePage";
+import type { AuthUser } from "./types";
 import "./App.css";
-
-type AuthUser = {
-  email: string;
-  role: "ADMIN" | "INSTRUCTOR" | "STUDENT";
-};
 
 function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -17,7 +13,7 @@ function App() {
   useEffect(() => {
     console.log("Warmup: pinging backend...");
 
-    fetch("https://brightpath-lms.onrender.com/actuator/health")
+    fetch(getHealthcheckUrl())
       .then((res) => {
         console.log("Warmup: backend responded", res.status);
       })

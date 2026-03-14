@@ -8,9 +8,9 @@ import com.brightpath.lms.course.dto.JoinCourseRequest;
 import com.brightpath.lms.course.dto.StudentDto;
 import com.brightpath.lms.enrollment.Enrollment;
 import com.brightpath.lms.enrollment.EnrollmentRepository;
-import com.brightpath.lms.user.Role;
 import com.brightpath.lms.user.User;
 import com.brightpath.lms.user.UserRepository;
+import com.brightpath.lms.user.RoleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +28,6 @@ import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.security.SecureRandom;
 
@@ -62,7 +61,7 @@ public class CourseService {
     public Course createCourse(String email, CourseCreateRequest request) {
         User user = findUserByEmail(email);
 
-        if (!hasRole(user.getRoles(), "ADMIN") && !hasRole(user.getRoles(), "INSTRUCTOR")) {
+        if (!RoleUtils.hasRole(user.getRoles(), "ADMIN") && !RoleUtils.hasRole(user.getRoles(), "INSTRUCTOR")) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Only instructor or admin can create courses");
         }
 
@@ -72,7 +71,7 @@ public class CourseService {
 
         Course course = new Course();
         course.setTitle(request.getTitle().trim());
-        course.setDescription(request.getDescription());
+        course.setDescription(normalizeOptionalText(request.getDescription()));
         // Store direct owner UUID to keep course ownership checks lightweight and explicit.
         course.setOwnerUserId(user.getId());
         return courseRepository.save(course);
@@ -80,7 +79,7 @@ public class CourseService {
 
     public List<Course> getAllCourses(String actorEmail) {
         User actor = findUserByEmail(actorEmail);
-        if (hasRole(actor.getRoles(), "ADMIN")) {
+        if (RoleUtils.hasRole(actor.getRoles(), "ADMIN")) {
             return courseRepository.findAll();
         }
 
@@ -100,7 +99,7 @@ public class CourseService {
 
     public List<Course> getInstructorCourses(String email) {
         User user = findUserByEmail(email);
-        if (!hasRole(user.getRoles(), "ADMIN") && !hasRole(user.getRoles(), "INSTRUCTOR")) {
+        if (!RoleUtils.hasRole(user.getRoles(), "ADMIN") && !RoleUtils.hasRole(user.getRoles(), "INSTRUCTOR")) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Only instructor or admin can view instructor courses");
         }
         return courseRepository.findByOwnerUserIdOrderByCreatedAtDesc(user.getId());
@@ -153,12 +152,7 @@ public class CourseService {
             throw new ApiException(HttpStatus.CONFLICT, "User already enrolled in this course");
         }
 
-        Enrollment enrollment = new Enrollment();
-        enrollment.setId(UUID.randomUUID());
-        enrollment.setUserId(user.getId());
-        enrollment.setCourseId(course.getId());
-        enrollment.setEnrolledAt(Instant.now());
-        enrollmentRepository.save(enrollment);
+        enrollmentRepository.save(buildEnrollment(course.getId(), user.getId()));
 
         log.debug("Enrollment saved: userId={}, courseId={}", user.getId(), course.getId());
     }
@@ -186,12 +180,7 @@ public class CourseService {
             throw new ApiException(HttpStatus.CONFLICT, "User already enrolled in this course");
         }
 
-        Enrollment enrollment = new Enrollment();
-        enrollment.setId(UUID.randomUUID());
-        enrollment.setUserId(user.getId());
-        enrollment.setCourseId(course.getId());
-        enrollment.setEnrolledAt(Instant.now());
-        enrollmentRepository.save(enrollment);
+        enrollmentRepository.save(buildEnrollment(course.getId(), user.getId()));
     }
 
     @Transactional
@@ -199,7 +188,7 @@ public class CourseService {
         Course course = getCourseById(courseId);
         User actor = findUserByEmail(actorEmail);
 
-        boolean isAdmin = hasRole(actor.getRoles(), "ADMIN");
+        boolean isAdmin = RoleUtils.hasRole(actor.getRoles(), "ADMIN");
         boolean isOwner = actor.getId().equals(course.getOwnerUserId());
         if (!isAdmin && !isOwner) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Access denied");
@@ -224,7 +213,7 @@ public class CourseService {
         Course course = getCourseById(courseId);
         User actor = findUserByEmail(actorEmail);
 
-        boolean isAdmin = hasRole(actor.getRoles(), "ADMIN");
+        boolean isAdmin = RoleUtils.hasRole(actor.getRoles(), "ADMIN");
         boolean isOwner = actor.getId().equals(course.getOwnerUserId());
         if (!isAdmin && !isOwner) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Access denied");
@@ -246,7 +235,7 @@ public class CourseService {
             User student = usersById.get(enrollment.getUserId());
             if (student != null) {
                 String displayName = isBlank(student.getFullName()) ? student.getEmail() : student.getFullName();
-                students.add(new StudentDto(student.getId(), student.getEmail(), displayName, resolvePrimaryRole(student.getRoles())));
+                students.add(new StudentDto(student.getId(), student.getEmail(), displayName, RoleUtils.resolvePrimaryRole(student.getRoles())));
             }
         }
 
@@ -258,7 +247,7 @@ public class CourseService {
         Course course = getCourseById(courseId);
         User actor = findUserByEmail(actorEmail);
 
-        boolean isAdmin = hasRole(actor.getRoles(), "ADMIN");
+        boolean isAdmin = RoleUtils.hasRole(actor.getRoles(), "ADMIN");
         boolean isOwner = actor.getId().equals(course.getOwnerUserId());
         if (!isAdmin && !isOwner) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Access denied");
@@ -275,12 +264,7 @@ public class CourseService {
             throw new ApiException(HttpStatus.CONFLICT, "User already enrolled in this course");
         }
 
-        Enrollment enrollment = new Enrollment();
-        enrollment.setId(UUID.randomUUID());
-        enrollment.setUserId(invitedUser.getId());
-        enrollment.setCourseId(course.getId());
-        enrollment.setEnrolledAt(Instant.now());
-        enrollmentRepository.save(enrollment);
+        enrollmentRepository.save(buildEnrollment(course.getId(), invitedUser.getId()));
     }
 
     @Transactional
@@ -293,8 +277,8 @@ public class CourseService {
         Enrollment enrollment = enrollmentRepository.findByCourseIdAndUserId(courseId, userId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Enrollment not found"));
 
-        boolean actorIsAdmin = hasRole(actor.getRoles(), "ADMIN");
-        boolean actorIsCourseOwnerInstructor = hasRole(actor.getRoles(), "INSTRUCTOR")
+        boolean actorIsAdmin = RoleUtils.hasRole(actor.getRoles(), "ADMIN");
+        boolean actorIsCourseOwnerInstructor = RoleUtils.hasRole(actor.getRoles(), "INSTRUCTOR")
             && actor.getId().equals(course.getOwnerUserId());
 
         if (!actorIsAdmin && !actorIsCourseOwnerInstructor) {
@@ -313,8 +297,8 @@ public class CourseService {
         Course course = getCourseById(courseId);
         User actor = findUserByEmail(instructorEmail);
 
-        boolean actorIsAdmin = hasRole(actor.getRoles(), "ADMIN");
-        boolean actorIsInstructor = hasRole(actor.getRoles(), "INSTRUCTOR");
+        boolean actorIsAdmin = RoleUtils.hasRole(actor.getRoles(), "ADMIN");
+        boolean actorIsInstructor = RoleUtils.hasRole(actor.getRoles(), "INSTRUCTOR");
         boolean isOwner = actor.getId().equals(course.getOwnerUserId());
 
         if (!actorIsAdmin && !(actorIsInstructor && isOwner)) {
@@ -363,18 +347,22 @@ public class CourseService {
         return value == null || value.trim().isEmpty();
     }
 
-    private boolean hasRole(Set<Role> roles, String roleName) {
-        return roles != null && roles.stream().anyMatch(r -> roleName.equalsIgnoreCase(r.getName()));
+    private String normalizeOptionalText(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private String resolvePrimaryRole(Set<Role> roles) {
-        if (hasRole(roles, "ADMIN")) {
-            return "ADMIN";
-        }
-        if (hasRole(roles, "INSTRUCTOR")) {
-            return "INSTRUCTOR";
-        }
-        return "STUDENT";
+    private Enrollment buildEnrollment(UUID courseId, UUID userId) {
+        Enrollment enrollment = new Enrollment();
+        enrollment.setId(UUID.randomUUID());
+        enrollment.setUserId(userId);
+        enrollment.setCourseId(courseId);
+        enrollment.setEnrolledAt(Instant.now());
+        return enrollment;
     }
 
     private void ensureCourseAccess(Course course, User actor) {
@@ -384,7 +372,7 @@ public class CourseService {
     }
 
     private boolean hasCourseAccess(Course course, User actor) {
-        return hasRole(actor.getRoles(), "ADMIN")
+        return RoleUtils.hasRole(actor.getRoles(), "ADMIN")
             || actor.getId().equals(course.getOwnerUserId())
             || enrollmentRepository.existsByCourseIdAndUserId(course.getId(), actor.getId());
     }

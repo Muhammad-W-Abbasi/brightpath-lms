@@ -10,13 +10,14 @@ Backend API: [https://brightpath-lms.onrender.com](https://brightpath-lms.onrend
 
 ## Demo Accounts
 
-### Instructor
-- Email: `instructor@brightpath.com`
-- Password: `instructor123`
+- Instructor
+  - Email: `instructor@brightpath.com`
+  - Password: `instructor123`
+- Student
+  - Email: `student1@brightpath.com`
+  - Password: `student123`
 
-### Student
-- Email: `student1@brightpath.com`
-- Password: `student123`
+For local development, the `dev` profile may generate fresh demo passwords at startup if `DEMO_INSTRUCTOR_PASSWORD` and `DEMO_STUDENT_PASSWORD` are not provided.
 
 ## Features
 
@@ -26,6 +27,7 @@ Backend API: [https://brightpath-lms.onrender.com](https://brightpath-lms.onrend
 - Course join code generation and enrollment
 - Student enrollment management
 - Instructor course dashboard
+- Instructor-managed course reminders/tasks with per-student completion tracking
 - Secure protected API endpoints
 - Production deployment (Netlify + Render)
 
@@ -58,6 +60,13 @@ Spring Boot + Security + JWT (Render)
 PostgreSQL
 ```
 
+### Key Decisions
+
+- The frontend and backend are kept as separate deployable applications, which makes local development and deployment concerns explicit.
+- Authentication is stateless with JWT bearer tokens, keeping the API simple and avoiding server-side session management.
+- Database schema changes are managed with Flyway so schema evolution is versioned alongside application code.
+- Course reminders/tasks are modeled as lightweight course-owned records with separate per-student completion rows, which keeps the feature simple without introducing full LMS submission/grading complexity.
+
 ## Tech Stack
 
 ### Frontend
@@ -82,37 +91,82 @@ PostgreSQL
 - Render (backend hosting)
 - Flyway (database migrations)
 
-## Getting Started
+## Local Setup
+
+### Prerequisites
+
+- Node.js + npm
+- Java 21
+- Maven
+
+On a fresh macOS machine with Homebrew:
+
+```bash
+eval "$(/opt/homebrew/bin/brew shellenv)"
+brew install node openjdk@21 maven
+```
+
+Set Java 21 for the current terminal session:
+
+```bash
+export JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
+export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"
+```
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Muhammad-W-Abbasi/brightpath-lms
-cd D2L
+git clone https://github.com/Muhammad-W-Abbasi/brightpath-lms.git
+cd brightpath-lms
 ```
 
-### 2. Run backend
+### 2. Start the backend
 
 ```bash
 cd backend
-mvn spring-boot:run
+SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
 ```
 
-### 3. Run frontend
+The `dev` profile uses an in-memory H2 database and applies Flyway migrations automatically, so PostgreSQL is not required for local development.
+
+### 3. Start the frontend
 
 ```bash
 cd brightpath-frontend
 npm install
-npm run dev
+cp .env.example .env
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
-### 4. Configure environment variables
+### 4. Open the app
 
-Use the committed template at [`brightpath-frontend/.env.example`](brightpath-frontend/.env.example) for frontend environment configuration.
+- Frontend: `http://127.0.0.1:5173`
+- Backend health: `http://127.0.0.1:8080/actuator/health`
+
+### 5. Optional local demo credentials
+
+To keep local credentials stable across backend restarts, set these before starting the backend:
+
+```bash
+export DEMO_INSTRUCTOR_PASSWORD="instructor123"
+export DEMO_STUDENT_PASSWORD="student123"
+```
+
+If these are not set, the backend will generate passwords and print them at startup.
 
 ## Environment Variables
 
-Backend requires the following variables:
+Frontend:
+
+- `VITE_API_BASE_URL`
+
+The committed default in [`brightpath-frontend/.env.example`](brightpath-frontend/.env.example) points to the local backend:
+
+```bash
+VITE_API_BASE_URL=http://localhost:8080/api
+```
+
+Backend production configuration:
 
 - `SPRING_DATASOURCE_URL`
 - `SPRING_DATASOURCE_USERNAME`
@@ -120,7 +174,8 @@ Backend requires the following variables:
 - `APP_JWT_SECRET`
 - `APP_JOIN_CODE_PEPPER`
 - `APP_CORS_ORIGINS`
-See `brightpath-frontend/.env.example` for frontend env keys. Configure backend variables in your deployment secret manager.
+
+For local development with `SPRING_PROFILES_ACTIVE=dev`, the backend has safe defaults and does not require PostgreSQL credentials.
 
 ## Database
 
@@ -137,8 +192,8 @@ On backend startup, Flyway applies pending migrations automatically.
 ## Project Structure
 
 ```text
-D2L/
-├── backend/                  # Spring Boot API
+brightpath-lms/
+├── backend/                 # Spring Boot API
 │   └── src/main/java/...    # Controllers, services, security, DTOs
 ├── brightpath-frontend/     # React + Vite frontend
 │   └── src/                 # Pages, components, API client
@@ -150,8 +205,9 @@ D2L/
 
 ## Future Improvements
 
-- Assignment creation and submission workflows
-- Grading and rubric support
+- Automated tests for course task/reminder flows
+- Replace remaining demo dashboard placeholders with live activity data
+- Deployment docs for the latest reminder/task feature
 - File upload handling
 - Notification system (in-app/email)
 - Expanded analytics and reporting

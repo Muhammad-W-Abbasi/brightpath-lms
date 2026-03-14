@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +25,7 @@ public class DataSeeder {
 
     private static final String INSTRUCTOR_EMAIL = "instructor@brightpath.com";
     private static final String STUDENT_EMAIL = "student1@brightpath.com";
+    private static final Clock UTC_CLOCK = Clock.systemUTC();
 
     @Bean
     public CommandLineRunner seedDemoUsers(UserRepository userRepository,
@@ -70,13 +72,14 @@ public class DataSeeder {
     }
 
     private User buildUser(String email, String fullName, String encodedPassword, Role role) {
+        LocalDateTime now = LocalDateTime.now(UTC_CLOCK);
         User user = new User();
         user.setEmail(email);
         user.setFullName(fullName);
         user.setPasswordHash(encodedPassword);
         user.setEmailVerified(true);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
         user.getRoles().add(role);
         return user;
     }

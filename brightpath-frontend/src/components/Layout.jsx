@@ -14,7 +14,7 @@ function Layout({
   return (
     <div className="bp-shell">
       <Sidebar
-        role={role}can 
+        role={role}
         activeSection={activeSection}
         onNavigate={onNavigate}
         onLogout={onLogout}

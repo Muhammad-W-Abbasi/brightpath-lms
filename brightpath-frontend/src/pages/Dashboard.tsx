@@ -9,20 +9,11 @@ import Announcements from "../components/dashboard/Announcements";
 import CourseGrid from "../components/dashboard/CourseGrid";
 import UpcomingAssignments from "../components/dashboard/UpcomingAssignments";
 import RecentActivity from "../components/dashboard/RecentActivity";
+import type { AuthUser, Course, CourseTask, Role } from "../types";
+import { getErrorMessage } from "../utils/api";
 
-type Role = "" | "ADMIN" | "INSTRUCTOR" | "STUDENT";
+type DashboardRole = Role | "";
 type NavKey = "dashboard" | "courses" | "students" | "assignments" | "reports" | "settings";
-
-type Course = {
-  id: string;
-  title: string;
-  description?: string;
-};
-
-type AuthUser = {
-  email: string;
-  role: "ADMIN" | "INSTRUCTOR" | "STUDENT";
-};
 
 type DashboardProps = {
   authUser: AuthUser | null;
@@ -38,12 +29,14 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
   const [email, setEmail] = useState(authUser?.email ?? DEMO_EMAIL);
   const [password, setPassword] = useState("");
   const [demoSelection, setDemoSelection] = useState<DemoSelection>("");
-  const [role, setRole] = useState<Role>(authUser?.role ?? "");
+  const [role, setRole] = useState<DashboardRole>(authUser?.role ?? "");
   const [loading, setLoading] = useState(false);
 
   const [activeSection, setActiveSection] = useState<NavKey>("dashboard");
   const [courses, setCourses] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const [tasks, setTasks] = useState<CourseTask[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
 
   const [newCourseTitle, setNewCourseTitle] = useState("");
   const [newCourseDescription, setNewCourseDescription] = useState("");
@@ -51,7 +44,7 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
 
   const isInstructor = role === "INSTRUCTOR" || role === "ADMIN";
 
-  const loadCourses = async (userRole: Role) => {
+  const loadCourses = async (userRole: DashboardRole) => {
     if (!userRole) {
       return;
     }
@@ -61,11 +54,37 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
       const endpoint = userRole === "STUDENT" ? "/courses/enrolled" : "/courses/instructor";
       const res = await axiosClient.get(endpoint);
       setCourses(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to load courses");
+    } catch (error) {
+      console.error(error);
+      alert(getErrorMessage(error, "Failed to load courses"));
     } finally {
       setLoadingCourses(false);
+    }
+  };
+
+  const loadTasks = async () => {
+    setLoadingTasks(true);
+    try {
+      const response = await axiosClient.get("/tasks");
+      setTasks(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error(error);
+      alert(getErrorMessage(error, "Failed to load assignments"));
+    } finally {
+      setLoadingTasks(false);
+    }
+  };
+
+  const toggleTaskCompletion = async (task: CourseTask, completed: boolean) => {
+    try {
+      const response = await axiosClient.put(`/courses/${task.courseId}/tasks/${task.id}/completion`, { completed });
+      const updatedTask = response.data as CourseTask;
+      setTasks((previousTasks) =>
+        previousTasks.map((existingTask) => (existingTask.id === updatedTask.id ? updatedTask : existingTask))
+      );
+    } catch (error) {
+      console.error(error);
+      alert(getErrorMessage(error, "Failed to update assignment status"));
     }
   };
 
@@ -89,7 +108,7 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
       setToken(token);
 
       const meResponse = await axiosClient.get("/auth/me");
-      const nextRole = meResponse.data.role as Role;
+      const nextRole = meResponse.data.role as DashboardRole;
       setRole(nextRole);
       if (meResponse.data.email) {
         setEmail(meResponse.data.email);
@@ -101,13 +120,10 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
 
       setPassword("");
       setActiveSection("dashboard");
-      await loadCourses(nextRole);
-    } catch (err: any) {
-      console.error(err);
-      alert(
-        "Login failed: " +
-          (err.response ? `${err.response.status} ${JSON.stringify(err.response.data)}` : err.message)
-      );
+      await Promise.all([loadCourses(nextRole), loadTasks()]);
+    } catch (error) {
+      console.error(error);
+      alert(`Login failed: ${getErrorMessage(error, "Unable to reach the backend")}`);
     } finally {
       setLoading(false);
     }
@@ -117,6 +133,7 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
     setRole("");
     setActiveSection("dashboard");
     setCourses([]);
+    setTasks([]);
     clearToken();
     onAuthChange(null);
   };
@@ -139,10 +156,10 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
       });
       setNewCourseTitle("");
       setNewCourseDescription("");
-      await loadCourses(role);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to create course");
+      await Promise.all([loadCourses(role), loadTasks()]);
+    } catch (error) {
+      console.error(error);
+      alert(getErrorMessage(error, "Failed to create course"));
     }
   };
 
@@ -155,10 +172,10 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
     try {
       await axiosClient.post("/courses/join", { joinCode: joinCode.trim() });
       setJoinCode("");
-      await loadCourses(role);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to join course");
+      await Promise.all([loadCourses(role), loadTasks()]);
+    } catch (error) {
+      console.error(error);
+      alert(getErrorMessage(error, "Failed to join course"));
     }
   };
 
@@ -181,12 +198,13 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
     if (!authUser?.role) {
       setRole("");
       setCourses([]);
+      setTasks([]);
       return;
     }
 
     setRole(authUser.role);
     setEmail(authUser.email);
-    loadCourses(authUser.role);
+    void Promise.all([loadCourses(authUser.role), loadTasks()]);
   }, [authUser?.email, authUser?.role]);
 
   if (!role) {
@@ -312,7 +330,7 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
               <Announcements
-                role={role as "ADMIN" | "INSTRUCTOR" | "STUDENT"}
+                role={role as Role}
                 courses={courses}
               />
 
@@ -321,7 +339,7 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
               ) : courses.length ? (
                 <CourseGrid
                   courses={courses}
-                  role={role as "ADMIN" | "INSTRUCTOR" | "STUDENT"}
+                  role={role as Role}
                   onOpenCourse={openCourse}
                 />
               ) : (
@@ -338,10 +356,12 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
 
             <div className="space-y-8">
               <UpcomingAssignments
-                role={role as "ADMIN" | "INSTRUCTOR" | "STUDENT"}
-                courses={courses}
+                role={role as Role}
+                tasks={tasks}
+                loading={loadingTasks}
+                onToggleCompletion={toggleTaskCompletion}
               />
-              <RecentActivity role={role as "ADMIN" | "INSTRUCTOR" | "STUDENT"} courses={courses} />
+              <RecentActivity role={role as Role} courses={courses} />
             </div>
           </div>
         </>
@@ -398,7 +418,7 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
           ) : courses.length ? (
             <CourseGrid
               courses={courses}
-              role={role as "ADMIN" | "INSTRUCTOR" | "STUDENT"}
+              role={role as Role}
               onOpenCourse={openCourse}
             />
           ) : (
@@ -437,13 +457,15 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
             title="Assignments"
             subtitle={
               isInstructor
-                ? "Review assignment pipeline and grading workload."
-                : "Track deadlines, submissions, and grading status."
+                ? "Manage live course reminders and keep students aligned."
+                : "Track reminder tasks and mark them complete as you go."
             }
           />
           <UpcomingAssignments
-            role={role as "ADMIN" | "INSTRUCTOR" | "STUDENT"}
-            courses={courses}
+            role={role as Role}
+            tasks={tasks}
+            loading={loadingTasks}
+            onToggleCompletion={toggleTaskCompletion}
           />
         </>
       ) : null}
@@ -458,7 +480,7 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
                 : "View your learning progress across courses."
             }
           />
-          <RecentActivity role={role as "ADMIN" | "INSTRUCTOR" | "STUDENT"} courses={courses} />
+          <RecentActivity role={role as Role} courses={courses} />
         </>
       ) : null}
 

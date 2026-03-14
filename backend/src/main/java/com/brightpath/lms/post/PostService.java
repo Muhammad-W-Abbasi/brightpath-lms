@@ -6,9 +6,9 @@ import com.brightpath.lms.course.CourseRepository;
 import com.brightpath.lms.enrollment.EnrollmentRepository;
 import com.brightpath.lms.post.dto.PostCreateRequest;
 import com.brightpath.lms.post.dto.PostResponse;
-import com.brightpath.lms.user.Role;
 import com.brightpath.lms.user.User;
 import com.brightpath.lms.user.UserRepository;
+import com.brightpath.lms.user.RoleUtils;
 import org.owasp.html.HtmlPolicyBuilder;
 import org.owasp.html.PolicyFactory;
 import org.owasp.html.Sanitizers;
@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -49,14 +48,14 @@ public class PostService {
         User author = userRepository.findByEmail(instructorEmail)
             .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Authenticated user not found"));
 
-        if (!hasRole(author.getRoles(), "INSTRUCTOR") && !hasRole(author.getRoles(), "ADMIN")) {
+        if (!RoleUtils.hasRole(author.getRoles(), "INSTRUCTOR") && !RoleUtils.hasRole(author.getRoles(), "ADMIN")) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Only instructor or admin can create posts");
         }
 
         Course course = courseRepository.findById(courseId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Course not found"));
 
-        boolean isAdmin = hasRole(author.getRoles(), "ADMIN");
+        boolean isAdmin = RoleUtils.hasRole(author.getRoles(), "ADMIN");
         boolean isOwner = author.getId().equals(course.getOwnerUserId());
         if (!isAdmin && !isOwner) {
             throw new ApiException(
@@ -89,7 +88,7 @@ public class PostService {
         Course course = courseRepository.findById(courseId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Course not found"));
 
-        boolean isAdmin = hasRole(viewer.getRoles(), "ADMIN");
+        boolean isAdmin = RoleUtils.hasRole(viewer.getRoles(), "ADMIN");
         boolean isOwner = viewer.getId().equals(course.getOwnerUserId());
         boolean enrolled = enrollmentRepository.existsByCourseIdAndUserId(courseId, viewer.getId());
 
@@ -113,9 +112,5 @@ public class PostService {
             authorName,
             post.getCreatedAt()
         );
-    }
-
-    private boolean hasRole(Set<Role> roles, String name) {
-        return roles != null && roles.stream().anyMatch(role -> name.equalsIgnoreCase(role.getName()));
     }
 }

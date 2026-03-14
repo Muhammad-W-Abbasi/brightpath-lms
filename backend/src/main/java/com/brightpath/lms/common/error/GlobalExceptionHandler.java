@@ -24,7 +24,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleApiException(ApiException ex, HttpServletRequest request) {
         // ApiException represents expected domain/API failures with explicit status codes.
         HttpStatus status = ex.getStatus();
-        log.error("API exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        if (status.is5xxServerError()) {
+            log.error("API exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        } else {
+            log.warn("API exception at {}: {}", request.getRequestURI(), ex.getMessage());
+        }
         return ResponseEntity.status(status).body(build(status, ex.getMessage(), request));
     }
 
@@ -44,14 +48,14 @@ public class GlobalExceptionHandler {
         if (message.isBlank()) {
             message = "Validation failed";
         }
-        log.error("Validation error at {}: {}", request.getRequestURI(), message, ex);
+        log.warn("Validation error at {}: {}", request.getRequestURI(), message);
         return ResponseEntity.status(status).body(build(status, message, request));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiErrorResponse> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
-        log.error("Constraint violation at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        log.warn("Constraint violation at {}: {}", request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(status).body(build(status, "Validation failed", request));
     }
 
