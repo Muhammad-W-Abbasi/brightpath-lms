@@ -1,5 +1,6 @@
 package com.brightpath.lms.auth;
 
+import com.brightpath.lms.auth.dto.DemoLoginRequest;
 import com.brightpath.lms.auth.dto.LoginRequest;
 import com.brightpath.lms.auth.dto.LoginResponse;
 import com.brightpath.lms.auth.dto.RegisterRequest;
@@ -10,6 +11,7 @@ import com.brightpath.lms.user.Role;
 import com.brightpath.lms.user.RoleRepository;
 import com.brightpath.lms.user.User;
 import com.brightpath.lms.user.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +25,9 @@ import java.time.ZoneOffset;
 public class AuthService {
 
     private static final String EVENT_TYPE = "auth_login";
+    private static final String DEMO_EVENT_TYPE = "auth_demo_login";
+    private static final String INSTRUCTOR_EMAIL = "instructor@brightpath.com";
+    private static final String STUDENT_EMAIL = "student1@brightpath.com";
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -30,19 +35,22 @@ public class AuthService {
     private final LoginAttemptLimiter loginAttemptLimiter;
     private final AuthAuditLogger authAuditLogger;
     private final JwtService jwtService;
+    private final boolean demoLoginEnabled;
 
     public AuthService(UserRepository userRepository,
                        RoleRepository roleRepository,
                        PasswordEncoder passwordEncoder,
                        LoginAttemptLimiter loginAttemptLimiter,
                        AuthAuditLogger authAuditLogger,
-                       JwtService jwtService) {
+                       JwtService jwtService,
+                       @Value("${app.demo-login.enabled:true}") boolean demoLoginEnabled) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.loginAttemptLimiter = loginAttemptLimiter;
         this.authAuditLogger = authAuditLogger;
         this.jwtService = jwtService;
+        this.demoLoginEnabled = demoLoginEnabled;
     }
 
     public String register(RegisterRequest request) {
@@ -94,6 +102,34 @@ public class AuthService {
 
         loginAttemptLimiter.reset(emailHash, ipAddress);
         authAuditLogger.logEvent(EVENT_TYPE, requestId, user.getId(), emailHash, ipAddress, userAgent, "success");
+        return new LoginResponse(jwtService.generateToken(user.getEmail()));
+    }
+
+    public LoginResponse demoLogin(DemoLoginRequest request, String ipAddress, String userAgent, String requestId) {
+        if (!demoLoginEnabled) {
+            authAuditLogger.logEvent(DEMO_EVENT_TYPE, requestId, null, null, ipAddress, userAgent, "disabled");
+            throw new InvalidCredentialsException();
+        }
+
+        String role = request.getRole() == null ? "" : request.getRole().trim().toUpperCase();
+        String email = switch (role) {
+            case "INSTRUCTOR" -> INSTRUCTOR_EMAIL;
+            case "STUDENT" -> STUDENT_EMAIL;
+            default -> null;
+        };
+
+        if (email == null) {
+            authAuditLogger.logEvent(DEMO_EVENT_TYPE, requestId, null, null, ipAddress, userAgent, "invalid_role");
+            throw new InvalidCredentialsException();
+        }
+
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            authAuditLogger.logEvent(DEMO_EVENT_TYPE, requestId, null, null, ipAddress, userAgent, "missing_demo_user");
+            throw new InvalidCredentialsException();
+        }
+
+        authAuditLogger.logEvent(DEMO_EVENT_TYPE, requestId, user.getId(), null, ipAddress, userAgent, "success");
         return new LoginResponse(jwtService.generateToken(user.getEmail()));
     }
 

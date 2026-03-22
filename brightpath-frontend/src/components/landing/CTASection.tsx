@@ -1,38 +1,63 @@
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
 export default function CTASection() {
   return (
-    <section className="py-28 border-t border-[#e4e4e7]">
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        viewport={{ once: true, margin: "-80px" }}
-        className="max-w-xl mx-auto px-6 text-center"
-      >
-        <p className="font-mono text-xs uppercase tracking-widest text-[#71717a]">// ready</p>
-        <h2 className="mt-4 text-3xl md:text-4xl font-semibold text-[#18181b] tracking-tight">
-          Explore the platform.
+    <section id="demo" className="relative overflow-hidden bg-[#0f172a] py-24">
+      <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-[#3755c3]/20 blur-[100px]" />
+      <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#dde1ff]/20 blur-[100px]" />
+
+      <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
+        <h2 className="text-4xl font-extrabold tracking-[-0.04em] text-white md:text-5xl">
+          See it running in production
         </h2>
-        <p className="mt-4 text-base text-[#52525b] leading-relaxed">
-          Sign in to BrightPath and explore the full LMS — course management,
-          enrollment, progress tracking, and the admin dashboard.
+        <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-400">
+          Explore the complete BrightPath workflow through the live demo, then choose a demo role directly from the sign-in screen.
         </p>
 
-        <motion.div whileHover={{ scale: 1.01, y: -1 }} transition={{ duration: 0.2 }} className="mt-10">
+        <div className="mx-auto mb-12 mt-12 max-w-3xl rounded-[28px] border border-slate-700/50 bg-slate-800/35 p-8 text-left shadow-[0_30px_80px_rgba(15,23,42,0.28)] backdrop-blur-md">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-xl">
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#b8c4ff]">
+                Live product walkthrough
+              </p>
+              <h3 className="mt-3 text-2xl font-bold tracking-[-0.03em] text-white">
+                Launch the app and choose your demo role inside the sign-in flow
+              </h3>
+              <p className="mt-3 text-sm leading-7 text-slate-300">
+                Step into BrightPath through a guided demo entry point built to showcase both sides of the platform.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3 md:max-w-[16rem] md:justify-end">
+              <span className="rounded-full border border-slate-600 bg-slate-900/50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
+                Instructor flow
+              </span>
+              <span className="rounded-full border border-slate-600 bg-slate-900/50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
+                Student flow
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
           <Link
             to="/dashboard"
-            className="h-11 px-8 rounded-lg bg-[#2563eb] text-white inline-flex items-center text-sm font-medium"
+            className="inline-flex w-full items-center justify-center rounded-[20px] bg-white px-12 py-5 text-xl font-bold text-slate-950 shadow-2xl shadow-white/10 transition duration-200 hover:scale-[1.02] md:w-auto"
           >
-            Sign in to BrightPath
+            Launch BrightPath Demo
           </Link>
-        </motion.div>
-
-        <p className="mt-5 font-mono text-xs text-[#a1a1aa]">
-          Open source · Portfolio project · No account required for demo
-        </p>
-      </motion.div>
+          <div>
+            <a
+              href="https://github.com/Muhammad-W-Abbasi/brightpath-lms"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 font-medium text-slate-400 transition-colors hover:text-white"
+            >
+              View source on GitHub
+            </a>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

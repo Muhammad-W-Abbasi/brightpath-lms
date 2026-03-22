@@ -10,14 +10,13 @@ Backend API: [https://brightpath-lms.onrender.com](https://brightpath-lms.onrend
 
 ## Demo Accounts
 
-- Instructor
-  - Email: `instructor@brightpath.com`
-  - Password: `instructor123`
-- Student
-  - Email: `student1@brightpath.com`
-  - Password: `student123`
+### Instructor
+- Email: `instructor@brightpath.com`
+- Access via the sign-in page demo selector
 
-For local development, the `dev` profile may generate fresh demo passwords at startup if `DEMO_INSTRUCTOR_PASSWORD` and `DEMO_STUDENT_PASSWORD` are not provided.
+### Student
+- Email: `student1@brightpath.com`
+- Access via the sign-in page demo selector
 
 ## Features
 
@@ -143,16 +142,7 @@ npm run dev -- --host 127.0.0.1 --port 5173
 - Frontend: `http://127.0.0.1:5173`
 - Backend health: `http://127.0.0.1:8080/actuator/health`
 
-### 5. Optional local demo credentials
-
-To keep local credentials stable across backend restarts, set these before starting the backend:
-
-```bash
-export DEMO_INSTRUCTOR_PASSWORD="instructor123"
-export DEMO_STUDENT_PASSWORD="student123"
-```
-
-If these are not set, the backend will generate passwords and print them at startup.
+Use the committed templates at [`brightpath-frontend/.env.example`](brightpath-frontend/.env.example) and [`backend/.env.example`](backend/.env.example) for local environment configuration.
 
 ## Environment Variables
 

@@ -87,9 +87,23 @@ class AuthLoginEndpointTest {
         mockMvc.perform(
                 post("/api/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"email\":\"instructor@brightpath.com\",\"password\":\"instructor123\"}")
+                    .content("{\"email\":\"instructor@brightpath.com\",\"password\":\"correct-password\"}")
             )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.token").value("jwt-token-value"));
+    }
+
+    @Test
+    void successfulDemoLoginReturns200() throws Exception {
+        when(authService.demoLogin(any(), any(), any(), any()))
+            .thenReturn(new LoginResponse("demo-jwt-token"));
+
+        mockMvc.perform(
+                post("/api/auth/demo-login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"role\":\"INSTRUCTOR\"}")
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.token").value("demo-jwt-token"));
     }
 }

@@ -6,6 +6,7 @@ import com.brightpath.lms.user.User;
 import com.brightpath.lms.user.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,15 +31,17 @@ public class DataSeeder {
     @Bean
     public CommandLineRunner seedDemoUsers(UserRepository userRepository,
                                            RoleRepository roleRepository,
-                                           PasswordEncoder passwordEncoder) {
+                                           PasswordEncoder passwordEncoder,
+                                           @Value("${demo.instructor.password:}") String instructorPasswordProperty,
+                                           @Value("${demo.student.password:}") String studentPasswordProperty) {
         return args -> {
             String instructorPassword = resolveDemoPassword(
-                "DEMO_INSTRUCTOR_PASSWORD",
-                "Generated demo instructor password: {}"
+                instructorPasswordProperty,
+                "DEMO_INSTRUCTOR_PASSWORD"
             );
             String studentPassword = resolveDemoPassword(
-                "DEMO_STUDENT_PASSWORD",
-                "Generated demo student password: {}"
+                studentPasswordProperty,
+                "DEMO_STUDENT_PASSWORD"
             );
 
             // Seed demo accounts only for empty datasets so production/real data is never altered.
@@ -84,12 +87,12 @@ public class DataSeeder {
         return user;
     }
 
-    private String resolveDemoPassword(String envVar, String generatedLogPattern) {
-        return Optional.ofNullable(System.getenv(envVar))
+    private String resolveDemoPassword(String configuredValue, String envVarName) {
+        return Optional.ofNullable(configuredValue)
             .filter(value -> !value.isBlank())
             .orElseGet(() -> {
                 String generatedPassword = UUID.randomUUID().toString();
-                log.warn(generatedLogPattern, generatedPassword);
+                log.warn("Generated a random password for {} because no explicit demo password was configured.", envVarName);
                 return generatedPassword;
             });
     }

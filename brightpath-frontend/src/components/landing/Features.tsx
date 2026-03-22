@@ -1,98 +1,56 @@
-import { motion } from "framer-motion";
-import { Shield, Users, FileClock, Waypoints, Gauge, Lock } from "lucide-react";
-
-const containerVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.08 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
-  },
-};
+import { Database, LayoutGrid, LockKeyhole } from "lucide-react";
 
 const features = [
   {
-    icon: Shield,
-    title: "JWT Authentication",
+    icon: LockKeyhole,
+    title: "Secure authentication",
     description:
-      "Stateless auth with refresh token rotation and secure HttpOnly cookie delivery.",
+      "JWT-based stateless security with password hashing, protected routes, and production-ready access control.",
   },
   {
-    icon: Users,
-    title: "Role-Based Access",
+    icon: LayoutGrid,
+    title: "Course management",
     description:
-      "Granular RBAC with admin, instructor, and student roles enforced at the API layer.",
+      "Instructor and student flows are both modeled, from course creation and enrollment to announcements and course participation.",
   },
   {
-    icon: FileClock,
-    title: "Audit Logging",
+    icon: Database,
+    title: "Production backend",
     description:
-      "Every mutation is timestamped and attributed. Full trail for compliance review.",
+      "Spring Boot REST APIs backed by PostgreSQL and Flyway migrations to keep schema changes consistent across environments.",
   },
-  {
-    icon: Waypoints,
-    title: "REST API Design",
-    description:
-      "Consistent resource naming, pagination, and error envelopes across all endpoints.",
-  },
-  {
-    icon: Gauge,
-    title: "Rate Limiting",
-    description:
-      "Per-user rate limits with token bucket algorithm. Resistant to burst abuse.",
-  },
-  {
-    icon: Lock,
-    title: "Secure Headers",
-    description:
-      "CORS policy, HSTS, CSP, and X-Frame-Options configured on every response.",
-  },
-];
+] as const;
 
 export default function Features() {
   return (
-    <section className="py-28 border-t border-[#e4e4e7]">
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-80px" }}
-        variants={containerVariants}
-        className="max-w-6xl mx-auto px-6"
-      >
-        <motion.p variants={itemVariants} className="font-mono text-xs uppercase tracking-widest text-[#71717a]">
-          // capabilities
-        </motion.p>
-        <motion.h2 variants={itemVariants} className="mt-4 text-3xl md:text-4xl font-semibold text-[#18181b]">
-          Built with the right defaults.
-        </motion.h2>
-        <motion.p variants={itemVariants} className="mt-4 text-base text-[#52525b] leading-relaxed max-w-2xl">
-          No shortcuts. Every layer — auth, API design, data modeling — was engineered deliberately.
-        </motion.p>
+    <section id="features" className="bg-[#faf8ff] py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto mb-16 max-w-2xl text-center">
+          <h2 className="text-3xl font-extrabold tracking-[-0.04em] text-[#131b2e] md:text-4xl">
+            Built to model a real learning product
+          </h2>
+          <div className="mx-auto mt-4 h-1.5 w-20 rounded-full bg-[#3755c3]" />
+        </div>
 
-        <motion.div variants={containerVariants} className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid gap-8 md:grid-cols-3">
           {features.map((feature) => {
             const Icon = feature.icon;
+
             return (
-              <motion.article
+              <article
                 key={feature.title}
-                variants={itemVariants}
-                whileHover={{ y: -2, boxShadow: "0 10px 20px rgba(24,24,27,0.06)" }}
-                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                className="bg-[#f8f9fb] border border-[#e4e4e7] rounded-xl p-6"
+                className="group rounded-[24px] border border-[#dde1ff] bg-white p-8 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(55,85,195,0.10)]"
               >
-                <Icon size={18} className="text-[#2563eb]" />
-                <h3 className="text-lg font-medium text-[#18181b] mt-4">{feature.title}</h3>
-                <p className="text-sm text-[#52525b] mt-2 leading-relaxed">{feature.description}</p>
-              </motion.article>
+                <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#dde1ff]/50 text-[#3755c3] transition duration-300 group-hover:scale-110">
+                  <Icon size={24} />
+                </div>
+                <h3 className="mb-3 text-xl font-bold text-[#131b2e]">{feature.title}</h3>
+                <p className="leading-7 text-[#444653]">{feature.description}</p>
+              </article>
             );
           })}
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </section>
   );
 }

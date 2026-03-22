@@ -22,13 +22,16 @@ type DashboardProps = {
 
 const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL ?? "instructor@brightpath.com";
 type DemoSelection = "" | "instructor" | "student";
+const DEMO_PASSWORD_MASK = "••••••••••••";
+const DEFAULT_DEMO_SELECTION: DemoSelection = DEMO_EMAIL === "student1@brightpath.com" ? "student" : "instructor";
 
 function Dashboard({ authUser, onAuthChange }: DashboardProps) {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState(authUser?.email ?? DEMO_EMAIL);
   const [password, setPassword] = useState("");
-  const [demoSelection, setDemoSelection] = useState<DemoSelection>("");
+  const [demoSelection, setDemoSelection] = useState<DemoSelection>(authUser ? "" : DEFAULT_DEMO_SELECTION);
+  const [role, setRole] = useState<Role>(authUser?.role ?? "");
   const [role, setRole] = useState<DashboardRole>(authUser?.role ?? "");
   const [loading, setLoading] = useState(false);
 
@@ -88,8 +91,32 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
     }
   };
 
+  const finalizeLogin = async (token: string) => {
+    setToken(token);
+
+    const meResponse = await axiosClient.get("/auth/me");
+    const nextRole = meResponse.data.role as DashboardRole;
+    setRole(nextRole);
+    if (meResponse.data.email) {
+      setEmail(meResponse.data.email);
+      onAuthChange({
+        email: meResponse.data.email,
+        role: nextRole as AuthUser["role"],
+      });
+    }
+
+    setPassword("");
+    setActiveSection("dashboard");
+    await Promise.all([loadCourses(nextRole), loadTasks()]);
+  };
+
   const login = async () => {
     if (loading) {
+      return;
+    }
+
+    if (demoSelection && password === DEMO_PASSWORD_MASK) {
+      await loginWithDemo();
       return;
     }
 
@@ -105,25 +132,35 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
         throw new Error("Login response did not include a token.");
       }
 
-      setToken(token);
-
-      const meResponse = await axiosClient.get("/auth/me");
-      const nextRole = meResponse.data.role as DashboardRole;
-      setRole(nextRole);
-      if (meResponse.data.email) {
-        setEmail(meResponse.data.email);
-        onAuthChange({
-          email: meResponse.data.email,
-          role: nextRole as AuthUser["role"],
-        });
-      }
-
-      setPassword("");
-      setActiveSection("dashboard");
-      await Promise.all([loadCourses(nextRole), loadTasks()]);
+      await finalizeLogin(token);
     } catch (error) {
       console.error(error);
       alert(`Login failed: ${getErrorMessage(error, "Unable to reach the backend")}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithDemo = async () => {
+    if (loading || !demoSelection) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const selectedRole = demoSelection === "student" ? "STUDENT" : "INSTRUCTOR";
+      const response = await axiosClient.post("/auth/demo-login", {
+        role: selectedRole,
+      });
+      const token = response?.data?.token;
+      if (!token) {
+        throw new Error("Demo login response did not include a token.");
+      }
+
+      await finalizeLogin(token);
+    } catch (error) {
+      console.error(error);
+      alert(`Demo login failed: ${getErrorMessage(error, "Unable to reach the backend")}`);
     } finally {
       setLoading(false);
     }
@@ -183,15 +220,17 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
     setDemoSelection(selection);
     if (selection === "instructor") {
       setEmail("instructor@brightpath.com");
-      setPassword("instructor123");
+      setPassword(DEMO_PASSWORD_MASK);
       return;
     }
 
     if (selection === "student") {
       setEmail("student1@brightpath.com");
-      setPassword("student123");
+      setPassword(DEMO_PASSWORD_MASK);
       return;
     }
+
+    setPassword("");
   };
 
   useEffect(() => {
@@ -199,6 +238,11 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
       setRole("");
       setCourses([]);
       setTasks([]);
+      if (!authUser) {
+        setEmail(DEMO_EMAIL);
+        setDemoSelection(DEFAULT_DEMO_SELECTION);
+        setPassword(DEMO_PASSWORD_MASK);
+      }
       return;
     }
 
@@ -211,17 +255,6 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
     return (
       <div className="bp-login-wrapper">
         <Card className="bp-login-card" title="BrightPath LMS" subtitle="Sign in to continue">
-          <div className="mb-3">
-            <Link
-              to="/"
-              className="dashboard-home-button"
-              aria-label="Return to homepage"
-            >
-              <span aria-hidden="true">←</span>
-              Back to Home
-            </Link>
-          </div>
-
           <form
             className="bp-form"
             onSubmit={(e) => {
@@ -276,7 +309,7 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
               aria-busy={loading}
               aria-disabled={loading}
             >
-              <span>{loading ? "Signing in..." : "Log In"}</span>
+              <span>{loading ? (demoSelection && password === DEMO_PASSWORD_MASK ? "Opening demo..." : "Signing in...") : "Log In"}</span>
             </button>
 
             {loading ? (
@@ -293,6 +326,17 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
                 </div>
               </div>
             ) : null}
+
+            <div className="bp-login-secondary-action">
+              <Link
+                to="/"
+                className="dashboard-home-button"
+                aria-label="Return to homepage"
+              >
+                <span className="dashboard-home-button__icon" aria-hidden="true">←</span>
+                Back to Home
+              </Link>
+            </div>
           </form>
         </Card>
       </div>

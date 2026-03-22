@@ -75,9 +75,10 @@ public class SecurityConfig {
                     .policyDirectives(cspPolicy)
                 )
             )
-            .authorizeHttpRequests(auth -> {
+                .authorizeHttpRequests(auth -> {
                     auth.requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/auth/demo-login").permitAll();
                     auth.requestMatchers("/actuator/health").permitAll();
                     auth.requestMatchers("/actuator/**").hasRole("ADMIN");
                     if (allowH2Console) {

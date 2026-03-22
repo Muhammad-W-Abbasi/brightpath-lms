@@ -1,6 +1,7 @@
 package com.brightpath.lms.auth;
 
 import com.brightpath.lms.auth.dto.AuthMeResponse;
+import com.brightpath.lms.auth.dto.DemoLoginRequest;
 import com.brightpath.lms.auth.dto.LoginRequest;
 import com.brightpath.lms.auth.dto.LoginResponse;
 import com.brightpath.lms.auth.dto.RegisterRequest;
@@ -38,6 +39,18 @@ public class AuthController {
         String userAgent = servletRequest.getHeader("User-Agent");
         String requestId = servletRequest.getHeader("X-Request-Id");
         LoginResponse response = authService.login(request, clientIp, userAgent, requestId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/demo-login")
+    public ResponseEntity<LoginResponse> demoLogin(
+        @Valid @RequestBody DemoLoginRequest request,
+        HttpServletRequest servletRequest
+    ) {
+        String clientIp = IpUtils.getClientIp(servletRequest);
+        String userAgent = servletRequest.getHeader("User-Agent");
+        String requestId = servletRequest.getHeader("X-Request-Id");
+        LoginResponse response = authService.demoLogin(request, clientIp, userAgent, requestId);
         return ResponseEntity.ok(response);
     }
 
