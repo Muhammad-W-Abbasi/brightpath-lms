@@ -40,7 +40,7 @@ class AuthServiceTest {
         loginAttemptLimiter = new LoginAttemptLimiter();
         authAuditLogger = mock(AuthAuditLogger.class);
         jwtService = mock(JwtService.class);
-        when(jwtService.generateToken("instructor@brightpath.com")).thenReturn("mock-jwt-token");
+        when(jwtService.generateToken("instructor@example.test")).thenReturn("mock-jwt-token");
         authService = new AuthService(userRepository, roleRepository, passwordEncoder, loginAttemptLimiter, authAuditLogger, jwtService, true);
     }
 
@@ -57,10 +57,10 @@ class AuthServiceTest {
 
     @Test
     void wrongPasswordReturnsInvalidCredentials() {
-        User user = user("instructor@brightpath.com", "correct-password", "INSTRUCTOR");
-        when(userRepository.findByEmail("instructor@brightpath.com")).thenReturn(Optional.of(user));
+        User user = user("instructor@example.test", "valid-test-credential", "INSTRUCTOR");
+        when(userRepository.findByEmail("instructor@example.test")).thenReturn(Optional.of(user));
 
-        LoginRequest request = request("instructor@brightpath.com", "wrong-password");
+        LoginRequest request = request("instructor@example.test", "invalid-test-credential");
         assertThrows(
             InvalidCredentialsException.class,
             () -> authService.login(request, "127.0.0.1", "JUnit", "req-2")
@@ -87,10 +87,10 @@ class AuthServiceTest {
 
     @Test
     void successResetsCountersAndReturnsToken() {
-        User user = user("instructor@brightpath.com", "correct-password", "INSTRUCTOR");
-        when(userRepository.findByEmail("instructor@brightpath.com")).thenReturn(Optional.of(user));
-        LoginRequest wrong = request("instructor@brightpath.com", "wrong-password");
-        LoginRequest correct = request("instructor@brightpath.com", "correct-password");
+        User user = user("instructor@example.test", "valid-test-credential", "INSTRUCTOR");
+        when(userRepository.findByEmail("instructor@example.test")).thenReturn(Optional.of(user));
+        LoginRequest wrong = request("instructor@example.test", "invalid-test-credential");
+        LoginRequest correct = request("instructor@example.test", "valid-test-credential");
 
         assertThrows(InvalidCredentialsException.class, () -> authService.login(wrong, "127.0.0.1", "JUnit", "req-reset"));
         assertThrows(InvalidCredentialsException.class, () -> authService.login(wrong, "127.0.0.1", "JUnit", "req-reset"));
@@ -106,7 +106,7 @@ class AuthServiceTest {
 
     @Test
     void demoLoginReturnsTokenForSupportedRole() {
-        User user = user("instructor@brightpath.com", "ignored-password", "INSTRUCTOR");
+        User user = user("instructor@brightpath.com", "ignored-test-credential", "INSTRUCTOR");
         when(userRepository.findByEmail("instructor@brightpath.com")).thenReturn(Optional.of(user));
 
         var request = new com.brightpath.lms.auth.dto.DemoLoginRequest();

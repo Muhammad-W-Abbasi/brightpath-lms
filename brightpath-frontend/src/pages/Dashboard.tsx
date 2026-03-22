@@ -31,7 +31,6 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
   const [email, setEmail] = useState(authUser?.email ?? DEMO_EMAIL);
   const [password, setPassword] = useState("");
   const [demoSelection, setDemoSelection] = useState<DemoSelection>(authUser ? "" : DEFAULT_DEMO_SELECTION);
-  const [role, setRole] = useState<Role>(authUser?.role ?? "");
   const [role, setRole] = useState<DashboardRole>(authUser?.role ?? "");
   const [loading, setLoading] = useState(false);
 

@@ -142,21 +142,46 @@
 .dashboard-home-button {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border-radius: 8px;
-  background-color: #f3f4f6;
-  color: #374151;
+  gap: 10px;
+  justify-content: center;
+  min-height: 44px;
+  width: 100%;
+  padding: 0 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border-radius: 12px;
+  border: 1px solid #dbe1ea;
+  background: #ffffff;
+  color: #334155;
   text-decoration: none;
-  transition: all 0.15s ease;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, color 160ms ease, background 160ms ease;
 }
 
 .dashboard-home-button:hover {
-  background-color: #e5e7eb;
-  color: #111827;
+  color: #0f172a;
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
   transform: translateY(-1px);
+}
+
+.dashboard-home-button__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.bp-login-secondary-action {
+  padding-top: 8px;
 }
 
 .bp-page {

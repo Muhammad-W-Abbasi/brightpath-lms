@@ -87,7 +87,7 @@ class AuthLoginEndpointTest {
         mockMvc.perform(
                 post("/api/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"email\":\"instructor@brightpath.com\",\"password\":\"correct-password\"}")
+                    .content("{\"email\":\"instructor@example.test\",\"password\":\"valid-test-credential\"}")
             )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.token").value("jwt-token-value"));
