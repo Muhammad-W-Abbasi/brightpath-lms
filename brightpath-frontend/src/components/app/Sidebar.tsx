@@ -8,14 +8,14 @@ import {
 } from "lucide-react";
 import { ComponentType } from "react";
 
-type NavKey = "dashboard" | "courses" | "students" | "assignments" | "reports" | "settings";
+export type NavKey = "dashboard" | "courses" | "students" | "assignments" | "reports" | "settings";
 
 type SidebarProps = {
   activeSection: NavKey;
   onNavigate: (section: NavKey) => void;
 };
 
-const navItems: { key: NavKey; label: string; icon: ComponentType<{ className?: string }> }[] = [
+export const navItems: { key: NavKey; label: string; icon: ComponentType<{ className?: string }> }[] = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { key: "courses", label: "Courses", icon: BookOpen },
   { key: "students", label: "Students", icon: Users },

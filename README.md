@@ -27,6 +27,8 @@ Backend API: [https://brightpath-lms.onrender.com](https://brightpath-lms.onrend
 - Student enrollment management
 - Instructor course dashboard
 - Instructor-managed course reminders/tasks with per-student completion tracking
+- Dashboard search across loaded courses and reminder tasks
+- Responsive mobile navigation
 - Secure protected API endpoints
 - Production deployment (Netlify + Render)
 
@@ -144,6 +146,8 @@ npm run dev -- --host 127.0.0.1 --port 5173
 
 Use the committed templates at [`brightpath-frontend/.env.example`](brightpath-frontend/.env.example) and [`backend/.env.example`](backend/.env.example) for local environment configuration.
 
+For a role-by-role walkthrough, see [`docs/demo-guide.md`](docs/demo-guide.md).
+
 ## Environment Variables
 
 Frontend:
@@ -178,6 +182,28 @@ backend/src/main/resources/db/migration
 ```
 
 On backend startup, Flyway applies pending migrations automatically.
+
+The local demo seed includes `Modern Web Development Foundations`, announcements, enrolled demo students, and reminder tasks.
+
+## Verification
+
+Frontend:
+
+```bash
+cd brightpath-frontend
+npm run build
+npm run lint
+npm run typecheck
+npm audit --audit-level=high
+```
+
+Backend:
+
+```bash
+cd backend
+mvn test
+mvn package
+```
 
 ## Project Structure
 

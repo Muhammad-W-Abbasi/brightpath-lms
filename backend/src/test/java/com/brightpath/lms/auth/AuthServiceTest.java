@@ -41,6 +41,7 @@ class AuthServiceTest {
         authAuditLogger = mock(AuthAuditLogger.class);
         jwtService = mock(JwtService.class);
         when(jwtService.generateToken("instructor@example.test")).thenReturn("mock-jwt-token");
+        when(jwtService.generateToken("instructor@brightpath.com")).thenReturn("demo-instructor-jwt-token");
         authService = new AuthService(userRepository, roleRepository, passwordEncoder, loginAttemptLimiter, authAuditLogger, jwtService, true);
     }
 
@@ -113,7 +114,7 @@ class AuthServiceTest {
         request.setRole("instructor");
 
         LoginResponse response = authService.demoLogin(request, "127.0.0.1", "JUnit", "req-demo");
-        assertEquals("mock-jwt-token", response.getToken());
+        assertEquals("demo-instructor-jwt-token", response.getToken());
     }
 
     @Test

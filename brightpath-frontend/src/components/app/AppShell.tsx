@@ -2,8 +2,7 @@ import { ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import PageContainer from "./PageContainer";
-
-type NavKey = "dashboard" | "courses" | "students" | "assignments" | "reports" | "settings";
+import type { NavKey } from "./Sidebar";
 
 type AppShellProps = {
   activeSection: NavKey;
@@ -11,6 +10,8 @@ type AppShellProps = {
   title: string;
   email: string;
   onLogout: () => void;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
   children: ReactNode;
 };
 
@@ -20,13 +21,23 @@ export default function AppShell({
   title,
   email,
   onLogout,
+  searchValue,
+  onSearchChange,
   children,
 }: AppShellProps) {
   return (
     <div className="min-h-screen bg-[#fafafa] text-[#18181b] flex">
       <Sidebar activeSection={activeSection} onNavigate={onNavigate} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar title={title} email={email} onLogout={onLogout} />
+        <Topbar
+          title={title}
+          email={email}
+          activeSection={activeSection}
+          onNavigate={onNavigate}
+          onLogout={onLogout}
+          searchValue={searchValue}
+          onSearchChange={onSearchChange}
+        />
         <PageContainer>{children}</PageContainer>
       </div>
     </div>

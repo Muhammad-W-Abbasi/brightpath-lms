@@ -11,7 +11,8 @@ import StudentList from "../components/StudentList";
 import ConfirmActionModal from "../components/ConfirmActionModal";
 import Toast from "../components/Toast";
 import CourseTasksPanel from "../components/tasks/CourseTasksPanel";
-import type { AuthUser, Course, CourseTask, CourseTaskInput, Post, Student, ToastState } from "../types";
+import CourseLessonsPanel from "../components/lessons/CourseLessonsPanel";
+import type { AuthUser, Course, CourseOutline, CourseTask, CourseTaskInput, LessonDetail, LessonInput, ModuleInput, Post, Student, ToastState } from "../types";
 import { getErrorMessage } from "../utils/api";
 
 type CoursePageProps = {
@@ -24,7 +25,7 @@ type PostPayload = {
   content: string;
 };
 
-type CourseTab = "announcements" | "assignments";
+type CourseTab = "lessons" | "announcements" | "assignments";
 
 function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
   const navigate = useNavigate();
@@ -38,8 +39,14 @@ function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [removingStudent, setRemovingStudent] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
-  const [activeTab, setActiveTab] = useState<CourseTab>("announcements");
+  const [activeTab, setActiveTab] = useState<CourseTab>("lessons");
   const [loadingTasks, setLoadingTasks] = useState(false);
+  const [outline, setOutline] = useState<CourseOutline | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<LessonDetail | null>(null);
+  const [loadingOutline, setLoadingOutline] = useState(false);
+  const [loadingLesson, setLoadingLesson] = useState(false);
+  const [outlineError, setOutlineError] = useState<string | null>(null);
+  const [lessonError, setLessonError] = useState<string | null>(null);
 
   const courseId = params.id ?? "";
   const role = authUser?.role ?? null;
@@ -97,12 +104,48 @@ function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
     }
   };
 
+  const loadOutline = async () => {
+    if (!courseId) {
+      return;
+    }
+
+    setLoadingOutline(true);
+    setOutlineError(null);
+    try {
+      const response = await axiosClient.get(`/courses/${courseId}/modules`);
+      setOutline(response.data as CourseOutline);
+    } catch (error) {
+      console.error(error);
+      setOutlineError(getErrorMessage(error, "Failed to load course modules."));
+    } finally {
+      setLoadingOutline(false);
+    }
+  };
+
+  const openLesson = async (lessonId: string) => {
+    if (!lessonId) {
+      return;
+    }
+
+    setLoadingLesson(true);
+    setLessonError(null);
+    try {
+      const response = await axiosClient.get(`/courses/${courseId}/lessons/${lessonId}`);
+      setSelectedLesson(response.data as LessonDetail);
+    } catch (error) {
+      console.error(error);
+      setLessonError(getErrorMessage(error, "Failed to open lesson."));
+    } finally {
+      setLoadingLesson(false);
+    }
+  };
+
   useEffect(() => {
     if (!authEmail || !role) {
       return;
     }
     const load = async () => {
-      const calls = [loadPosts(), loadTasks()];
+      const calls = [loadPosts(), loadTasks(), loadOutline()];
       if (isInstructor) {
         calls.push(loadStudents());
       }
@@ -110,6 +153,18 @@ function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
     };
     load();
   }, [authEmail, role, courseId, isInstructor]);
+
+  useEffect(() => {
+    if (!outline || selectedLesson || loadingLesson) {
+      return;
+    }
+
+    const lessons = outline.modules.flatMap((module) => module.lessons);
+    const nextLessonId = outline.nextLessonId ?? (lessons.length ? lessons[0].id : null);
+    if (nextLessonId) {
+      void openLesson(nextLessonId);
+    }
+  }, [outline, selectedLesson, loadingLesson]);
 
   const createAnnouncement = async (payload: PostPayload) => {
     await axiosClient.post(`/courses/${courseId}/posts`, payload);
@@ -163,6 +218,125 @@ function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
     } catch (error) {
       console.error(error);
       showToast("error", getErrorMessage(error, "Failed to update task status."));
+      throw error;
+    }
+  };
+
+  const createModule = async (input: ModuleInput) => {
+    try {
+      await axiosClient.post(`/courses/${courseId}/modules`, input);
+      await loadOutline();
+      showToast("success", "Module created successfully.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to create module."));
+      throw error;
+    }
+  };
+
+  const updateModule = async (moduleId: string, input: ModuleInput) => {
+    try {
+      await axiosClient.put(`/courses/${courseId}/modules/${moduleId}`, input);
+      await loadOutline();
+      showToast("success", "Module updated successfully.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to update module."));
+      throw error;
+    }
+  };
+
+  const deleteModule = async (moduleId: string) => {
+    try {
+      await axiosClient.delete(`/courses/${courseId}/modules/${moduleId}`);
+      setSelectedLesson((lesson) => {
+        const deletedModule = outline?.modules.find((module) => module.id === moduleId);
+        return deletedModule?.lessons.some((moduleLesson) => moduleLesson.id === lesson?.id) ? null : lesson;
+      });
+      await loadOutline();
+      showToast("success", "Module deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to delete module."));
+      throw error;
+    }
+  };
+
+  const reorderModules = async (orderedIds: string[]) => {
+    try {
+      const response = await axiosClient.put(`/courses/${courseId}/modules/order`, { orderedIds });
+      setOutline(response.data as CourseOutline);
+      showToast("success", "Module order updated.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to reorder modules."));
+      throw error;
+    }
+  };
+
+  const createLesson = async (moduleId: string, input: LessonInput) => {
+    try {
+      await axiosClient.post(`/courses/${courseId}/modules/${moduleId}/lessons`, input);
+      await loadOutline();
+      showToast("success", "Lesson created successfully.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to create lesson."));
+      throw error;
+    }
+  };
+
+  const updateLesson = async (moduleId: string, lessonId: string, input: LessonInput) => {
+    try {
+      await axiosClient.put(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}`, input);
+      await loadOutline();
+      if (selectedLesson?.id === lessonId) {
+        await openLesson(lessonId);
+      }
+      showToast("success", "Lesson updated successfully.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to update lesson."));
+      throw error;
+    }
+  };
+
+  const deleteLesson = async (moduleId: string, lessonId: string) => {
+    try {
+      await axiosClient.delete(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}`);
+      if (selectedLesson?.id === lessonId) {
+        setSelectedLesson(null);
+      }
+      await loadOutline();
+      showToast("success", "Lesson deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to delete lesson."));
+      throw error;
+    }
+  };
+
+  const reorderLessons = async (moduleId: string, orderedIds: string[]) => {
+    try {
+      const response = await axiosClient.put(`/courses/${courseId}/modules/${moduleId}/lessons/order`, { orderedIds });
+      setOutline(response.data as CourseOutline);
+      showToast("success", "Lesson order updated.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to reorder lessons."));
+      throw error;
+    }
+  };
+
+  const toggleLessonCompletion = async (lessonId: string, completed: boolean) => {
+    try {
+      const response = await axiosClient.put(`/courses/${courseId}/lessons/${lessonId}/completion`, { completed });
+      setSelectedLesson(response.data as LessonDetail);
+      await loadOutline();
+      showToast("success", completed ? "Lesson marked complete." : "Lesson marked incomplete.");
+    } catch (error) {
+      console.error(error);
+      showToast("error", getErrorMessage(error, "Failed to update lesson progress."));
       throw error;
     }
   };
@@ -226,11 +400,27 @@ function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
           subtitle={course.description || "No course description"}
           className="bp-course-header-card"
         >
-          <p className="bp-muted">Classroom announcements and updates</p>
+          <div className="grid gap-3">
+            <p className="bp-muted">Structured lessons, classroom announcements, and course tasks.</p>
+            {outline ? (
+              <div>
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="font-medium text-[#18181b]">Lesson progress</span>
+                  <span className="text-[#52525b]">
+                    {outline.progress.completedLessons}/{outline.progress.totalLessons} complete
+                  </span>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#e4e4e7]">
+                  <div className="h-full rounded-full bg-blue-600" style={{ width: `${outline.progress.percentComplete}%` }} />
+                </div>
+              </div>
+            ) : null}
+          </div>
         </Card>
 
         <div className="flex flex-wrap gap-2">
           {[
+            { key: "lessons", label: "Lessons" },
             { key: "announcements", label: "Announcements" },
             { key: "assignments", label: "Assignments" },
           ].map((tab) => {
@@ -250,7 +440,28 @@ function CoursePage({ authUser, onAuthChange }: CoursePageProps) {
           })}
         </div>
 
-        {activeTab === "announcements" ? (
+        {activeTab === "lessons" ? (
+          <CourseLessonsPanel
+            role={role}
+            outline={outline}
+            selectedLesson={selectedLesson}
+            loading={loadingOutline}
+            loadingLesson={loadingLesson}
+            error={outlineError}
+            lessonError={lessonError}
+            onReload={loadOutline}
+            onOpenLesson={openLesson}
+            onCreateModule={createModule}
+            onUpdateModule={updateModule}
+            onDeleteModule={deleteModule}
+            onReorderModules={reorderModules}
+            onCreateLesson={createLesson}
+            onUpdateLesson={updateLesson}
+            onDeleteLesson={deleteLesson}
+            onReorderLessons={reorderLessons}
+            onToggleCompletion={toggleLessonCompletion}
+          />
+        ) : activeTab === "announcements" ? (
           <section className="bp-classroom-layout">
             <div className="bp-feed-column">
               {isInstructor && (

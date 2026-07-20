@@ -24,6 +24,18 @@ const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL ?? "instructor@brightpath.com
 type DemoSelection = "" | "instructor" | "student";
 const DEMO_PASSWORD_MASK = "••••••••••••";
 const DEFAULT_DEMO_SELECTION: DemoSelection = DEMO_EMAIL === "student1@brightpath.com" ? "student" : "instructor";
+const DEMO_ROLE_DETAILS: Record<Exclude<DemoSelection, "">, { title: string; description: string; bullets: string[] }> = {
+  instructor: {
+    title: "Instructor Demo",
+    description: "Explore course setup, announcements, join codes, class lists, and reminder tasks.",
+    bullets: ["Manage two seeded courses", "Post announcements", "Review enrolled students"],
+  },
+  student: {
+    title: "Student Demo",
+    description: "Explore enrolled courses, course announcements, and task completion tracking.",
+    bullets: ["Open Math 101", "Track course reminders", "Mark tasks complete"],
+  },
+};
 
 function Dashboard({ authUser, onAuthChange }: DashboardProps) {
   const navigate = useNavigate();
@@ -39,12 +51,28 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [tasks, setTasks] = useState<CourseTask[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [newCourseTitle, setNewCourseTitle] = useState("");
   const [newCourseDescription, setNewCourseDescription] = useState("");
   const [joinCode, setJoinCode] = useState("");
 
   const isInstructor = role === "INSTRUCTOR" || role === "ADMIN";
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const filteredCourses = normalizedSearchQuery
+    ? courses.filter((course) =>
+        [course.title, course.description]
+          .filter(Boolean)
+          .some((value) => value?.toLowerCase().includes(normalizedSearchQuery))
+      )
+    : courses;
+  const filteredTasks = normalizedSearchQuery
+    ? tasks.filter((task) =>
+        [task.title, task.description, task.courseTitle]
+          .filter(Boolean)
+          .some((value) => value?.toLowerCase().includes(normalizedSearchQuery))
+      )
+    : tasks;
 
   const loadCourses = async (userRole: DashboardRole) => {
     if (!userRole) {
@@ -140,14 +168,15 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
     }
   };
 
-  const loginWithDemo = async () => {
-    if (loading || !demoSelection) {
+  const loginWithDemo = async (selectionOverride?: DemoSelection) => {
+    const selectedDemo = selectionOverride || demoSelection;
+    if (loading || !selectedDemo) {
       return;
     }
 
     setLoading(true);
     try {
-      const selectedRole = demoSelection === "student" ? "STUDENT" : "INSTRUCTOR";
+      const selectedRole = selectedDemo === "student" ? "STUDENT" : "INSTRUCTOR";
       const response = await axiosClient.post("/auth/demo-login", {
         role: selectedRole,
       });
@@ -232,6 +261,11 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
     setPassword("");
   };
 
+  const startQuickDemo = async (selection: Exclude<DemoSelection, "">) => {
+    handleDemoSelection(selection);
+    await loginWithDemo(selection);
+  };
+
   useEffect(() => {
     if (!authUser?.role) {
       setRole("");
@@ -254,6 +288,30 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
     return (
       <div className="bp-login-wrapper">
         <Card className="bp-login-card" title="BrightPath LMS" subtitle="Sign in to continue">
+          <div className="mb-5 rounded-lg border border-blue-100 bg-blue-50 p-4">
+            <p className="text-sm font-semibold text-blue-950">Quick Demo</p>
+            <p className="mt-1 text-sm leading-relaxed text-blue-900">
+              Enter with seeded demo data. Demo records may reset between sessions.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {(Object.keys(DEMO_ROLE_DETAILS) as Exclude<DemoSelection, "">[]).map((selection) => {
+                const detail = DEMO_ROLE_DETAILS[selection];
+                return (
+                  <button
+                    key={selection}
+                    type="button"
+                    onClick={() => startQuickDemo(selection)}
+                    disabled={loading}
+                    className="rounded-lg border border-blue-200 bg-white p-3 text-left shadow-sm transition hover:border-blue-400 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <span className="text-sm font-semibold text-[#18181b]">{detail.title}</span>
+                    <span className="mt-1 block text-xs leading-relaxed text-[#52525b]">{detail.description}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <form
             className="bp-form"
             onSubmit={(e) => {
@@ -275,7 +333,17 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
             </label>
 
             {demoSelection ? (
-              <p className="text-sm text-[#52525b]">You are using a demo account.</p>
+              <div className="rounded-lg border border-[#e4e4e7] bg-[#fafafa] p-4">
+                <p className="text-sm font-medium text-[#18181b]">{DEMO_ROLE_DETAILS[demoSelection].title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-[#52525b]">
+                  {DEMO_ROLE_DETAILS[demoSelection].description}
+                </p>
+                <ul className="mt-3 space-y-1 text-sm text-[#52525b]">
+                  {DEMO_ROLE_DETAILS[demoSelection].bullets.map((item) => (
+                    <li key={item}>• {item}</li>
+                  ))}
+                </ul>
+              </div>
             ) : null}
 
             <label className="bp-label">
@@ -362,6 +430,8 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
       title={pageTitle}
       email={email}
       onLogout={logout}
+      searchValue={searchQuery}
+      onSearchChange={setSearchQuery}
     >
       {activeSection === "dashboard" ? (
         <>
@@ -374,22 +444,24 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
             <div className="lg:col-span-2 space-y-8">
               <Announcements
                 role={role as Role}
-                courses={courses}
+                courses={filteredCourses}
               />
 
               {loadingCourses ? (
                 <p className="text-sm text-[#71717a]">Loading courses...</p>
-              ) : courses.length ? (
+              ) : filteredCourses.length ? (
                 <CourseGrid
-                  courses={courses}
+                  courses={filteredCourses}
                   role={role as Role}
                   onOpenCourse={openCourse}
                 />
               ) : (
                 <EmptyState
-                  title="No courses yet"
+                  title={normalizedSearchQuery ? "No matching courses" : "No courses yet"}
                   description={
-                    isInstructor
+                    normalizedSearchQuery
+                      ? "Try another search term or clear the search field."
+                      : isInstructor
                       ? "Create your first course to start teaching students."
                       : "Join your first course to begin learning."
                   }
@@ -400,11 +472,11 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
             <div className="space-y-8">
               <UpcomingAssignments
                 role={role as Role}
-                tasks={tasks}
+                tasks={filteredTasks}
                 loading={loadingTasks}
                 onToggleCompletion={toggleTaskCompletion}
               />
-              <RecentActivity role={role as Role} courses={courses} />
+              <RecentActivity role={role as Role} courses={filteredCourses} />
             </div>
           </div>
         </>
@@ -458,16 +530,20 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
 
           {loadingCourses ? (
             <p className="text-sm text-[#71717a]">Loading courses...</p>
-          ) : courses.length ? (
+          ) : filteredCourses.length ? (
             <CourseGrid
-              courses={courses}
+              courses={filteredCourses}
               role={role as Role}
               onOpenCourse={openCourse}
             />
           ) : (
             <EmptyState
-              title="No courses yet"
-              description="Create your first course to start teaching students."
+              title={normalizedSearchQuery ? "No matching courses" : "No courses yet"}
+              description={
+                normalizedSearchQuery
+                  ? "Try another search term or clear the search field."
+                  : "Create your first course to start teaching students."
+              }
             />
           )}
         </>
@@ -506,7 +582,7 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
           />
           <UpcomingAssignments
             role={role as Role}
-            tasks={tasks}
+            tasks={filteredTasks}
             loading={loadingTasks}
             onToggleCompletion={toggleTaskCompletion}
           />
@@ -523,7 +599,7 @@ function Dashboard({ authUser, onAuthChange }: DashboardProps) {
                 : "View your learning progress across courses."
             }
           />
-          <RecentActivity role={role as Role} courses={courses} />
+          <RecentActivity role={role as Role} courses={filteredCourses} />
         </>
       ) : null}
 

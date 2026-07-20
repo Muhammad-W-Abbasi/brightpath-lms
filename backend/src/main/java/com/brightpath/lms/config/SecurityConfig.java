@@ -1,6 +1,7 @@
 package com.brightpath.lms.config;
 
 import com.brightpath.lms.security.JsonAuthenticationEntryPoint;
+import com.brightpath.lms.security.JsonAccessDeniedHandler;
 import com.brightpath.lms.security.JwtAuthenticationFilter;
 import com.brightpath.lms.security.RateLimitingFilter;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -25,15 +26,18 @@ import org.springframework.web.cors.CorsConfigurationSource;
 public class SecurityConfig {
 
     private final RateLimitingFilter rateLimitingFilter;
+    private final JsonAccessDeniedHandler accessDeniedHandler;
     private final JsonAuthenticationEntryPoint authenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CorsConfigurationSource corsConfigurationSource;
 
     public SecurityConfig(RateLimitingFilter rateLimitingFilter,
+                      JsonAccessDeniedHandler accessDeniedHandler,
                       JsonAuthenticationEntryPoint authenticationEntryPoint,
                       JwtAuthenticationFilter jwtAuthenticationFilter,
                       @Qualifier("corsConfigurationSource") CorsConfigurationSource corsConfigurationSource) {
         this.rateLimitingFilter = rateLimitingFilter;
+        this.accessDeniedHandler = accessDeniedHandler;
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.corsConfigurationSource = corsConfigurationSource;
@@ -86,7 +90,10 @@ public class SecurityConfig {
                     }
                     auth.anyRequest().authenticated();
                 })
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler)
+            )
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // JWT must run before UsernamePasswordAuthenticationFilter to establish SecurityContext from bearer tokens.
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

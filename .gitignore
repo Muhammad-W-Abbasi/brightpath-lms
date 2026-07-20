@@ -9,6 +9,12 @@
 brightpath-frontend/.env
 brightpath-frontend/.env.local
 
+# Database dumps / backups
+*.dump
+*.sql
+*.backup
+!backend/src/main/resources/db/migration/*.sql
+
 # Node
 node_modules/
 npm-debug.log*
