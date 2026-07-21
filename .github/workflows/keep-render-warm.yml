@@ -2,37 +2,59 @@ name: Keep Render Warm
 
 on:
   schedule:
-    # GitHub Actions cron uses UTC and does not shift for daylight saving time.
-    # This targets about 7:00 AM-10:50 PM Winnipeg time during daylight time (CDT, UTC-5).
-    # During standard time (CST, UTC-6), it runs about 6:00 AM-9:50 PM Winnipeg time.
-    - cron: "*/10 0-3,12-23 * * *"
+    # Runs every 10 minutes, offset from common scheduling times.
+    # CDT: approximately 7:07 AM–10:57 PM
+    # CST: approximately 6:07 AM–9:57 PM
+    - cron: "7-57/10 0-3,12-23 * * *"
+
   workflow_dispatch:
 
 jobs:
   ping-render:
     name: Ping Render health endpoint
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
 
     steps:
       - name: Ping /actuator/health
         shell: bash
         run: |
           url="https://brightpath-lms.onrender.com/actuator/health"
+          max_attempts=3
 
-          status_code="$(curl \
-            --silent \
-            --show-error \
-            --location \
-            --output response.txt \
-            --write-out "%{http_code}" \
-            --max-time 70 \
-            "$url" || true)"
+          for attempt in $(seq 1 "$max_attempts"); do
+            echo "Attempt $attempt of $max_attempts"
+            echo "Render health endpoint: $url"
 
-          echo "Render health endpoint: $url"
-          echo "HTTP status code: $status_code"
+            status_code="$(
+              curl \
+                --silent \
+                --show-error \
+                --location \
+                --output response.txt \
+                --write-out "%{http_code}" \
+                --connect-timeout 20 \
+                --max-time 90 \
+                "$url"
+            )" || status_code="000"
 
-          if [[ ! "$status_code" =~ ^[0-9]{3}$ ]] || (( status_code < 200 || status_code >= 400 )); then
-            echo "Unexpected response from Render health endpoint."
-            exit 1
-          fi
+            echo "HTTP status code: $status_code"
+
+            if [[ "$status_code" =~ ^[0-9]{3}$ ]] &&
+               (( 10#$status_code >= 200 && 10#$status_code < 400 )); then
+              echo "Render service responded successfully."
+              cat response.txt
+              exit 0
+            fi
+
+            echo "Render service did not respond successfully."
+
+            if (( attempt < max_attempts )); then
+              echo "Waiting 15 seconds before retrying..."
+              sleep 15
+            fi
+          done
+
+          echo "Render health endpoint failed after $max_attempts attempts."
+          [[ -f response.txt ]] && cat response.txt
+          exit 1
